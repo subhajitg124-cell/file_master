@@ -16,7 +16,7 @@ export interface ProcessingSavings {
   percent: number;
 }
 
-export type OperationType = 'merge' | 'compress' | 'enhance' | 'edit' | 'convert';
+export type OperationType = 'merge' | 'compress' | 'enhance' | 'edit' | 'convert' | 'split';
 
 interface FileState {
   selectedSection: 'pdf' | 'image' | 'office' | 'video' | null;
@@ -35,10 +35,7 @@ interface FileState {
   ttlRemaining: number | null;
   isMockMode: boolean;
   backendHealthy: boolean;
-  backendCapabilities: {
-    libreoffice: boolean;
-    ffmpeg: boolean;
-  };
+  backendCapabilities: { libreoffice: boolean; ffmpeg: boolean };
   addFiles: (newFiles: FileRecord[]) => void;
   removeFile: (id: string) => void;
   clearStore: () => void;
@@ -59,11 +56,8 @@ export const useFileStore = create<FileState>((set) => ({
   selectedSection: null,
   setSelectedSection: (section) => set(() => {
     if (typeof window !== 'undefined') {
-      if (section) {
-        localStorage.setItem('file-master-last-workspace', section);
-      } else {
-        localStorage.removeItem('file-master-last-workspace');
-      }
+      if (section) localStorage.setItem('file-master-last-workspace', section);
+      else localStorage.removeItem('file-master-last-workspace');
     }
     return { selectedSection: section };
   }),
@@ -81,10 +75,7 @@ export const useFileStore = create<FileState>((set) => ({
   ttlRemaining: null,
   isMockMode: false,
   backendHealthy: true,
-  backendCapabilities: {
-    libreoffice: false,
-    ffmpeg: false
-  },
+  backendCapabilities: { libreoffice: false, ffmpeg: false },
   addFiles: (newFiles) => set((state) => {
     const updatedFiles = [...state.files, ...newFiles];
     let suggestedOp: OperationType | null = state.selectedOperation;
@@ -100,69 +91,58 @@ export const useFileStore = create<FileState>((set) => ({
       } else if (type.startsWith('video/')) {
         suggestedOp = 'compress';
         suggestedOptions = { operation: 'compress', crf: 28, preset: 'medium' };
+      } else if (type.startsWith('audio/')) {
+        suggestedOp = 'compress';
+        suggestedOptions = { operation: 'compress', audio_bitrate: 128 };
       } else if (type.includes('word') || type.includes('officedocument')) {
         suggestedOp = 'convert';
         suggestedOptions = { operation: 'docx_to_pdf' };
+      } else if (type === 'text/csv' || type.endsWith('csv')) {
+        suggestedOp = 'convert';
+        suggestedOptions = { operation: 'csv_to_xlsx' };
+      } else if (type === 'text/html') {
+        suggestedOp = 'convert';
+        suggestedOptions = { operation: 'html_to_md' };
       }
     }
     return { files: updatedFiles, selectedOperation: suggestedOp, operationOptions: suggestedOptions };
   }),
-  removeFile: (id) => set((state) => ({
-    files: state.files.filter((f) => f.id !== id)
-  })),
+  removeFile: (id) => set((state) => ({ files: state.files.filter((f) => f.id !== id) })),
   clearStore: () => set({
-    selectedSection: null,
-    rawFiles: [],
-    files: [],
-    selectedOperation: null,
-    operationOptions: {},
-    isProcessing: false,
-    progress: 0,
-    jobId: null,
-    downloadUrl: null,
-    error: null,
-    savings: null,
-    ttlRemaining: null
+    selectedSection: null, rawFiles: [], files: [], selectedOperation: null,
+    operationOptions: {}, isProcessing: false, progress: 0, jobId: null,
+    downloadUrl: null, error: null, savings: null, ttlRemaining: null
   }),
   setOperation: (operation) => set((state) => {
     const firstFileType = state.files[0]?.type || '';
     let defaults: Record<string, any> = {};
     if (operation === 'compress') {
-      if (firstFileType.startsWith('image/')) {
-        defaults = { quality: 80, resize_pct: 1.0 };
-      } else if (firstFileType.startsWith('video/')) {
-        defaults = { crf: 28, preset: 'medium' };
+      if (firstFileType.startsWith('image/')) defaults = { quality: 80, resize_pct: 1.0 };
+      else if (firstFileType.startsWith('video/')) defaults = { crf: 28, preset: 'medium' };
+      else if (firstFileType.startsWith('audio/')) defaults = { audio_bitrate: 128, audio_format: 'mp3' };
+      else if (firstFileType.includes('officedocument') || firstFileType.includes('word') || firstFileType.includes('sheet') || firstFileType.includes('presentation')) {
+        defaults = { office_compress_level: 'standard' };
       }
+    } else if (operation === 'split') {
+      defaults = { split_mode: 'all', split_every: 1, split_range: '1-1' };
     } else if (operation === 'enhance') {
-      if (firstFileType.startsWith('image/')) {
-        defaults = { brightness: 1.0, contrast: 1.0, sharpness: 1.0, denoise: false };
-      }
+      if (firstFileType.startsWith('image/')) defaults = { brightness: 1.0, contrast: 1.0, sharpness: 1.0, denoise: false };
     } else if (operation === 'convert') {
-      if (firstFileType === 'application/pdf') {
-        defaults = { target_format: 'png' };
-      } else if (firstFileType.startsWith('image/')) {
-        defaults = { target_format: 'webp' };
-      } else if (firstFileType.includes('wordprocessing') || firstFileType.endsWith('docx')) {
-        defaults = { operation: 'docx_to_pdf' };
-      } else if (firstFileType.includes('presentation') || firstFileType.endsWith('pptx')) {
-        defaults = { operation: 'pptx_to_pdf' };
-      } else if (firstFileType.includes('spreadsheet') || firstFileType.endsWith('xlsx')) {
-        defaults = { operation: 'xlsx_to_csv' };
-      } else if (firstFileType === 'text/markdown' || firstFileType.endsWith('md')) {
-        defaults = { operation: 'md_to_html' };
-      }
+      if (firstFileType === 'application/pdf') defaults = { operation: 'pdf_to_docx' };
+      else if (firstFileType.startsWith('image/')) defaults = { target_format: 'webp' };
+      else if (firstFileType.includes('wordprocessing') || firstFileType.endsWith('docx')) defaults = { operation: 'docx_to_pdf' };
+      else if (firstFileType.includes('presentation') || firstFileType.endsWith('pptx')) defaults = { operation: 'pptx_to_pdf' };
+      else if (firstFileType.includes('spreadsheet') || firstFileType.endsWith('xlsx')) defaults = { operation: 'xlsx_to_csv' };
+      else if (firstFileType === 'text/csv') defaults = { operation: 'csv_to_xlsx' };
+      else if (firstFileType === 'text/markdown') defaults = { operation: 'md_to_html' };
+      else if (firstFileType === 'text/html') defaults = { operation: 'html_to_md' };
     } else if (operation === 'edit') {
-      if (firstFileType.startsWith('video/')) {
-        defaults = { start_time: 0, end_time: 10 };
-      } else if (firstFileType.includes('word') || firstFileType.endsWith('docx')) {
-        defaults = { operation: 'docx_cleanup' };
-      }
+      if (firstFileType.startsWith('video/')) defaults = { start_time: 0, end_time: 10 };
+      else if (firstFileType.includes('word') || firstFileType.endsWith('docx')) defaults = { operation: 'docx_cleanup' };
     }
     return { selectedOperation: operation, operationOptions: { ...defaults, operation } };
   }),
-  updateOptions: (options) => set((state) => ({
-    operationOptions: { ...state.operationOptions, ...options }
-  })),
+  updateOptions: (options) => set((state) => ({ operationOptions: { ...state.operationOptions, ...options } })),
   setProcessing: (isProcessing) => set({ isProcessing }),
   setProgress: (progress) => set({ progress }),
   setJobId: (jobId) => set({ jobId }),

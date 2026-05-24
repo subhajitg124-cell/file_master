@@ -125,11 +125,13 @@ export const apiMock = {
     files: FileRecord[],
     onProgress: (p: number) => void,
     onSuccess: (downloadUrl: string, savings: ProcessingSavings | null) => void,
-    onFailure: (err: string) => void
+    onFailure: (err: string) => void,
+    outputMime?: string
   ) {
     let currentProgress = 0;
+    const isSlowOp = (operation === 'compress' && files[0]?.type.startsWith('video/')) || operation === 'split';
     const interval = setInterval(() => {
-      const step = operation === 'compress' && files[0]?.type.startsWith('video/') ? 5 : 12;
+      const step = isSlowOp ? 5 : 10;
       currentProgress += step;
       if (currentProgress >= 100) {
         clearInterval(interval);
@@ -138,15 +140,17 @@ export const apiMock = {
         let ratio = 0.85;
         if (operation === 'compress') ratio = 0.42;
         if (operation === 'enhance') ratio = 1.05;
+        if (outputMime && outputMime !== files[0]?.type) ratio = 0.9;
         const newSize = Math.round(originalTotalSize * ratio);
         const percent = Math.round(((originalTotalSize - newSize) / originalTotalSize) * 100);
-        const mockBlob = new Blob(["Simulated File Master Output"], { type: files[0]?.type || "application/octet-stream" });
+        const resolvedMime = outputMime || files[0]?.type || 'application/octet-stream';
+        const mockBlob = new Blob(['Simulated File Master Output'], { type: resolvedMime });
         const mockUrl = URL.createObjectURL(mockBlob);
         onSuccess(mockUrl, { originalSize: originalTotalSize, newSize, percent });
       } else {
         onProgress(currentProgress);
       }
-    }, 200);
+    }, 180);
     return () => clearInterval(interval);
   }
 };
