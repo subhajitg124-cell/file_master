@@ -1,0 +1,17 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+
+# Environment
+.env
+.env.*
+
+# Editor files
+.vscode/
+.DS_Store
