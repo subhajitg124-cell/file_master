@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #f8fafc; /* Slate 50 */
+    --foreground: #0f172a; /* Slate 900 */
+    
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    
+    --primary: #4f46e5; /* Indigo 600 */
+    --primary-foreground: #ffffff;
+    
+    --secondary: #e2e8f0; /* Slate 200 */
+    --secondary-foreground: #0f172a;
+    
+    --muted: #f1f5f9; /* Slate 100 */
+    --muted-foreground: #64748b; /* Slate 500 */
+    
+    --accent: #f5f3ff; /* Violet 50 */
+    --accent-foreground: #4f46e5;
+    
+    --border: #e2e8f0; /* Slate 200 */
+    --input: #e2e8f0;
+    --ring: #6366f1; /* Indigo 500 */
+    
+    --radius: 12px;
+  }
+
+  .dark {
+    --background: #090d16; /* Deep dark space */
+    --foreground: #f8fafc;
+    
+    --card: #111827; /* Gray 900 */
+    --card-foreground: #f8fafc;
+    
+    --primary: #6366f1; /* Indigo 500 */
+    --primary-foreground: #ffffff;
+    
+    --secondary: #1f2937; /* Gray 800 */
+    --secondary-foreground: #f8fafc;
+    
+    --muted: #1f2937;
+    --muted-foreground: #9ca3af; /* Gray 400 */
+    
+    --accent: #1e1b4b; /* Indigo 950 */
+    --accent-foreground: #c7d2fe;
+    
+    --border: #374151; /* Gray 700 */
+    --input: #374151;
+    --ring: #818cf8; /* Indigo 400 */
+  }
+}
+
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  /* Focus outlines for accessibility */
+  *:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Glassmorphism utility classes */
+.glass {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.dark .glass {
+  background: rgba(17, 24, 39, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Hide default scrollbars but keep functional */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Premium gradient backgrounds */
+.bg-gradient-premium {
+  background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.08), transparent 400px),
+              radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.05), transparent 400px);
+}

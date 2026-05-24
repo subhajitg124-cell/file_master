@@ -1,0 +1,22 @@
+# .pre-commit-config.yaml (root)
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      
+  - repo: local
+    hooks:
+      - id: backend-lint
+        name: Black + Ruff
+        entry: bash -c 'cd backend && black . && ruff check .'
+        language: system
+        pass_filenames: false
+        
+      - id: frontend-lint
+        name: ESLint + Prettier
+        entry: bash -c 'cd frontend && npm run lint && npm run format:check'
+        language: system
+        pass_filenames: false
