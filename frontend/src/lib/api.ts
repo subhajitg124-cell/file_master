@@ -110,6 +110,25 @@ export const apiClient = {
  * Self-contained local simulator.
  * Emulates uploading, processing delays, progress indicators, and compression savings metrics.
  */
+const createMockPreviewPlaceholder = (file: File): string => {
+  const extension = file.name.split('.').pop()?.toUpperCase() || 'FILE';
+  const safeName = file.name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="300" height="300">
+      <rect width="100%" height="100%" fill="#f8fafc" />
+      <rect x="30" y="30" width="240" height="90" rx="20" fill="#0ea5e9" />
+      <text x="150" y="80" text-anchor="middle" dominant-baseline="middle" font-family="Inter,Arial,sans-serif" font-size="32" fill="#ffffff">${extension}</text>
+      <text x="150" y="220" text-anchor="middle" dominant-baseline="middle" font-family="Inter,Arial,sans-serif" font-size="16" fill="#475569">${safeName}</text>
+    </svg>
+  `.trim();
+
+  const encoded = typeof window !== 'undefined'
+    ? window.btoa(unescape(encodeURIComponent(svg)))
+    : Buffer.from(svg).toString('base64');
+
+  return `data:image/svg+xml;base64,${encoded}`;
+};
+
 export const apiMock = {
   async uploadFiles(files: File[], jobId: string): Promise<FileRecord[]> {
     await new Promise((resolve) => setTimeout(resolve, 800)); // Sim upload latency
@@ -124,12 +143,16 @@ export const apiMock = {
       if (ext === 'xlsx') detectedType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
       if (ext === 'pptx') detectedType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
       
+      const previewUrl = detectedType.startsWith('image/')
+        ? URL.createObjectURL(file)
+        : createMockPreviewPlaceholder(file);
+
       return {
         id: Math.random().toString(36).substring(7),
         name: file.name,
         size: file.size,
         type: detectedType,
-        previewUrl: detectedType.startsWith('image/') ? URL.createObjectURL(file) : undefined
+        previewUrl
       };
     });
   },
