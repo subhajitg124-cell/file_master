@@ -79,6 +79,7 @@ const TOOLS: ToolItem[] = [
   { id: 'convert',  title: 'PDF → Excel',        description: 'Extract tables and data from PDF into a spreadsheet.',        category: 'office', icon: FileSpreadsheet,  gradient: 'from-emerald-500/20 to-teal-500/10 border-emerald-500/25', actionName: 'pdf_to_excel' },
   { id: 'convert',  title: 'Markdown → HTML',    description: 'Render .md files into styled HTML pages.',                   category: 'office', icon: FileCode,         gradient: 'from-emerald-500/20 to-teal-500/10 border-emerald-500/25', actionName: 'md_to_html' },
   { id: 'convert',  title: 'HTML → Markdown',    description: 'Convert HTML files back into clean Markdown.',               category: 'office', icon: ArrowLeftRight,   gradient: 'from-emerald-500/20 to-teal-500/10 border-emerald-500/25', actionName: 'html_to_md' },
+  { id: 'convert',  title: 'HTML → ZIP',         description: 'Bundle HTML, CSS, JS and assets into a portable ZIP file.',  category: 'office', icon: FileArchive,      gradient: 'from-emerald-500/20 to-teal-500/10 border-emerald-500/25', actionName: 'html_to_zip', badge: 'Client-side', badgeColor: 'emerald' },
   { id: 'compress', title: 'Compress Document',  description: 'Strip unused data from DOCX/PPTX/XLSX.',                    category: 'office', icon: FileArchive,      gradient: 'from-emerald-500/20 to-teal-500/10 border-emerald-500/25', actionName: 'compress' },
   { id: 'edit',     title: 'Clean Word Layout',  description: 'Normalize margins, remove empty paragraphs, fix fonts.',    category: 'office', icon: FileEdit,         gradient: 'from-emerald-500/20 to-teal-500/10 border-emerald-500/25', actionName: 'docx_cleanup' },
 
@@ -147,6 +148,7 @@ export const ToolGrid: React.FC = () => {
     if (tool.actionName === 'csv_to_xlsx') return '.csv,text/csv';
     if (tool.actionName === 'md_to_html') return '.md,text/markdown';
     if (tool.actionName === 'html_to_md') return '.html,text/html';
+    if (tool.actionName === 'html_to_zip') return '.html,.htm,.css,.js,.mjs,.png,.jpg,.jpeg,.gif,.svg,.webp,.ico,.woff,.woff2,text/html';
     return '.docx,.pptx,.xlsx,.csv,.md,.html,application/pdf';
   };
 
@@ -159,7 +161,7 @@ export const ToolGrid: React.FC = () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = getAcceptForTool(tool);
-    if (tool.actionName === 'merge' || tool.actionName === 'images_to_pdf' || tool.actionName === 'pdf_compare') input.multiple = true;
+    if (tool.actionName === 'merge' || tool.actionName === 'images_to_pdf' || tool.actionName === 'pdf_compare' || tool.actionName === 'html_to_zip') input.multiple = true;
     input.onchange = async (e: Event) => {
       const filesList = (e.target as HTMLInputElement).files;
       if (filesList && filesList.length > 0) {

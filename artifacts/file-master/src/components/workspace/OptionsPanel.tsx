@@ -24,6 +24,7 @@ import {
   compressImage, resizeImage, convertToIco, convertSvgToPng, convertImageFormat,
   getImageDimensions, cropImage, rotateFlipImage, addImageWatermark, removeImageBackground
 } from '@/lib/processing/image/client-image';
+import { runClientSideHtmlToZip, runClientSideInlineHtml } from '@/lib/processing/archive/client-archive';
 
 // ── Shared primitives ───────────────────────────────────────────────────────
 
@@ -572,6 +573,24 @@ export const OptionsPanel: React.FC = () => {
       if (actionName === 'to_ico') { prog(20); const blob = await convertToIco(rawFiles[0], operationOptions.ico_sizes || [16, 32, 48, 64]); prog(90); setTimeout(() => done(blob, rawFiles[0].size), 250); return; }
       if (actionName === 'svg_to_png') { prog(20); const blob = await convertSvgToPng(rawFiles[0], operationOptions.svg_width || 512, operationOptions.svg_height || 512); prog(90); setTimeout(() => done(blob, rawFiles[0].size), 250); return; }
 
+      // ── HTML → ZIP ─────────────────────────────────────────────────────
+      if (actionName === 'html_to_zip') {
+        if (!rawFiles.length) { setError('Add at least one HTML file.'); setProcessing(false); return; }
+        prog(20);
+        const inlineMode = operationOptions.html_zip_inline === true;
+        let blob: Blob;
+        if (inlineMode) {
+          const htmlFile = rawFiles.find(f => f.name.endsWith('.html') || f.name.endsWith('.htm') || f.type === 'text/html') || rawFiles[0];
+          const assets = rawFiles.filter(f => f !== htmlFile);
+          blob = await runClientSideInlineHtml(htmlFile, assets);
+        } else {
+          blob = await runClientSideHtmlToZip(rawFiles);
+        }
+        prog(90);
+        setTimeout(() => done(blob, rawFiles.reduce((a, f) => a + f.size, 0)), 300);
+        return;
+      }
+
       // ── Backend/mock fallback ──────────────────────────────────────────
       const outputMimeMap: Record<string, string> = {
         pdf_to_docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -583,6 +602,7 @@ export const OptionsPanel: React.FC = () => {
         pdf_to_images: 'image/png', docx_to_pdf: 'application/pdf', pptx_to_pdf: 'application/pdf',
         xlsx_to_csv: 'text/csv', csv_to_xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         md_to_html: 'text/html', html_to_md: 'text/markdown',
+        html_to_zip: 'application/zip',
         video_to_audio: 'audio/mpeg', video_to_gif: 'image/gif', compress_audio: 'audio/mpeg',
         enhance: fileType,
       };
@@ -1108,6 +1128,43 @@ export const OptionsPanel: React.FC = () => {
       xlsx_to_csv: 'Spreadsheet cells exported as CSV rows.', csv_to_xlsx: 'CSV imported into Excel workbook.',
       md_to_html: 'Markdown compiled into styled HTML.', html_to_md: 'HTML converted into clean Markdown.',
     };
+    if (actionName === 'html_to_zip') return (
+      <div className="space-y-4">
+        <div className="p-3 rounded-xl bg-primary/5 border border-primary/15 text-xs text-muted-foreground leading-relaxed">
+          <FileArchive className="h-3.5 w-3.5 inline mr-1.5 text-primary" />
+          Packages your HTML file and all companion assets (CSS, JS, images, fonts) into a single portable ZIP. Pick all files at once via the tool card. Runs entirely client-side — nothing leaves your browser.
+        </div>
+        <div className="space-y-3">
+          <div className="p-3 rounded-xl bg-card border border-border">
+            <p className="text-xs font-semibold text-foreground mb-1">Files queued for ZIP</p>
+            {rawFiles.length === 0
+              ? <p className="text-xs text-muted-foreground italic">No files loaded yet.</p>
+              : rawFiles.map(f => (
+                  <div key={f.name} className="flex items-center gap-2 py-1">
+                    <FileCode className="h-3 w-3 text-primary shrink-0" />
+                    <span className="text-xs font-mono text-foreground truncate">{f.name}</span>
+                    <span className="text-[10px] text-muted-foreground ml-auto shrink-0">{(f.size / 1024).toFixed(1)} KB</span>
+                  </div>
+                ))
+            }
+          </div>
+          <button
+            onClick={() => updateOptions({ html_zip_inline: !operationOptions.html_zip_inline })}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-xs font-semibold ${operationOptions.html_zip_inline ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-card border-border text-muted-foreground hover:border-primary/30'}`}
+          >
+            <span>Inline assets mode</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${operationOptions.html_zip_inline ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-muted border-border text-muted-foreground'}`}>
+              {operationOptions.html_zip_inline ? 'ON' : 'OFF'}
+            </span>
+          </button>
+          {operationOptions.html_zip_inline && (
+            <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs text-amber-400 leading-relaxed">
+              In inline mode, CSS/JS/image references in the HTML file are replaced with base64 data URIs and the result is zipped as a single self-contained file.
+            </div>
+          )}
+        </div>
+      </div>
+    );
     if (msgs[actionName]) return <InfoBox icon={<ArrowLeftRight className="h-4 w-4 text-primary" />} text={msgs[actionName]} />;
     if (actionName === 'pdf_to_images') return (
       <SelectField id="dpi-sel" label="Output Resolution" value={operationOptions.dpi || 150}
@@ -1451,6 +1508,7 @@ export const OptionsPanel: React.FC = () => {
     pdf_summarize: 'AI Summarize', pdf_translate: 'Translate PDF',
     pdf_to_excel: 'PDF → Excel', pdf_to_pdfa: 'PDF to PDF/A', scan_to_pdf: 'Scan to PDF',
     pdf_insert_link: 'Insert Link', pdf_insert_image: 'Insert Image', pdf_insert_shape: 'Draw Shapes',
+    html_to_zip: 'HTML → ZIP',
     remove_bg: 'Remove Background', image_crop: 'Crop Image', image_rotate: 'Rotate & Flip', image_watermark: 'Add Watermark',
   };
   const operationLabels: Record<string, string> = {
