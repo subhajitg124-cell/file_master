@@ -1,0 +1,53 @@
+{
+  "name": "File Master",
+  "short_name": "FileMaster",
+  "description": "Secure Multi-Tool File Processing Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/?section=pdf",
+      "accept": {
+        "application/pdf": [".pdf"]
+      },
+      "launch_type": "single-client"
+    },
+    {
+      "action": "/?section=image",
+      "accept": {
+        "image/jpeg": [".jpg", ".jpeg"],
+        "image/png": [".png"],
+        "image/webp": [".webp"]
+      }
+    },
+    {
+      "action": "/?section=video",
+      "accept": {
+        "video/mp4": [".mp4"]
+      }
+    },
+    {
+      "action": "/?section=office",
+      "accept": {
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"],
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+        "text/markdown": [".md"]
+      }
+    }
+  ]
+}
