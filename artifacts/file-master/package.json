@@ -81,6 +81,7 @@
     "@imgly/background-removal": "^1.7.0",
     "fflate": "^0.8.3",
     "jszip": "^3.10.1",
-    "onnxruntime-web": "^1.26.0"
+    "onnxruntime-web": "^1.26.0",
+    "pdfjs-dist": "^5.7.284"
   }
 }

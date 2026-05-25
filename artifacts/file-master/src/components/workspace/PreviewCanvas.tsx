@@ -1,9 +1,10 @@
 import React, { useRef, useState } from 'react';
 import { File, X, GripVertical, ArrowUpDown } from 'lucide-react';
 import { useFileStore } from '@/store/useFileStore';
+import { PdfMergeGrid } from './PdfMergeGrid';
 
 export const PreviewCanvas: React.FC = () => {
-  const { files, removeFile, selectedOperation } = useFileStore();
+  const { files, removeFile, selectedOperation, rawFiles } = useFileStore();
   const dragIndexRef = useRef<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -11,6 +12,14 @@ export const PreviewCanvas: React.FC = () => {
   if (files.length === 0) return null;
 
   const isMergeOp = selectedOperation === 'merge' || (useFileStore.getState().operationOptions.operation === 'merge_docs');
+
+  // Show the thumbnail card grid when merging multiple PDFs
+  const allPdf = rawFiles.length > 0 && rawFiles.every(
+    (f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+  );
+  if (isMergeOp && allPdf && files.length > 0) {
+    return <PdfMergeGrid />;
+  }
 
   const formatSize = (bytes: number): string => {
     if (bytes === 0) return '0 B';
