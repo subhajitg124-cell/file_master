@@ -28,6 +28,43 @@ function outputMime(file: File, format?: string): string {
   return 'image/png';
 }
 
+// ── Remove background (ML-powered, client-side) ───────────────────────────
+export async function removeImageBackground(
+  file: File,
+  outputFormat: 'png' | 'jpeg' | 'webp' = 'png',
+  backgroundFill?: string,
+  onProgress?: (pct: number) => void
+): Promise<Blob> {
+  const { removeBackground } = await import('@imgly/background-removal');
+
+  onProgress?.(10);
+  const resultBlob = await removeBackground(file, {
+    progress: (key: string, current: number, total: number) => {
+      if (total > 0) onProgress?.(10 + Math.round((current / total) * 70));
+    },
+  });
+  onProgress?.(85);
+
+  if (outputFormat === 'png' && !backgroundFill) return resultBlob;
+
+  // Composite onto background fill color (for JPEG output or custom bg)
+  const img = await loadImage(new File([resultBlob], 'result.png', { type: 'image/png' }));
+  const canvas = document.createElement('canvas');
+  canvas.width  = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext('2d')!;
+  if (backgroundFill) {
+    ctx.fillStyle = backgroundFill;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  } else if (outputFormat !== 'png') {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  ctx.drawImage(img, 0, 0);
+  onProgress?.(95);
+  return canvasToBlob(canvas, `image/${outputFormat}`, 0.93);
+}
+
 // ── Compress / resize ──────────────────────────────────────────────────────
 export async function compressImage(
   file: File,
@@ -39,8 +76,8 @@ export async function compressImage(
   const img = await loadImage(file);
   let w = img.naturalWidth;
   let h = img.naturalHeight;
-  if (maxWidth && w > maxWidth)  { h = Math.round(h * maxWidth / w);  w = maxWidth; }
-  if (maxHeight && h > maxHeight){ w = Math.round(w * maxHeight / h); h = maxHeight; }
+  if (maxWidth && w > maxWidth)   { h = Math.round(h * maxWidth / w);  w = maxWidth; }
+  if (maxHeight && h > maxHeight) { w = Math.round(w * maxHeight / h); h = maxHeight; }
   const canvas = document.createElement('canvas');
   canvas.width  = w;
   canvas.height = h;
@@ -90,7 +127,7 @@ export async function cropImage(
 // ── Rotate & Flip ──────────────────────────────────────────────────────────
 export async function rotateFlipImage(
   file: File,
-  rotateDeg: number,   // 0, 90, 180, 270
+  rotateDeg: number,
   flipH = false,
   flipV = false,
   format?: string
@@ -104,7 +141,6 @@ export async function rotateFlipImage(
   const oh = img.naturalHeight;
   const nw = Math.round(ow * cos + oh * sin);
   const nh = Math.round(ow * sin + oh * cos);
-
   const canvas = document.createElement('canvas');
   canvas.width  = nw;
   canvas.height = nh;
@@ -169,7 +205,6 @@ export async function addImageWatermark(
   const PAD = 24;
 
   if (tileRepeat) {
-    // Tile watermark across entire image diagonally
     ctx.save();
     ctx.translate(W / 2, H / 2);
     ctx.rotate(-Math.PI / 6);

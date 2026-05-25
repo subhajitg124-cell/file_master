@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sliders, RefreshCw, Settings2, Play, Loader2, Sparkles, Video, FileText,
   Scissors, Music, FileArchive, Image, ArrowLeftRight, FileCode, Maximize2,
   MonitorSmartphone, Globe, Lock, Unlock, RotateCw, Trash2, Stamp, Hash,
-  AlignJustify, Crop, FlipHorizontal, PenTool, FlipVertical
+  AlignJustify, Crop, FlipHorizontal, PenTool, FlipVertical, Eraser,
+  Plus, Minus, ChevronDown, ChevronUp, ScanText, Type
 } from 'lucide-react';
 import { useFileStore } from '@/store/useFileStore';
 import { apiClient, apiMock } from '@/lib/api';
 import {
   runClientSidePdfMerge, runClientSidePdfCompress, runClientSidePdfSplit,
   runClientSideImagesToPdf, runClientSidePdfRotate, runClientSidePdfDeletePages,
-  runClientSidePdfWatermark, runClientSidePdfPageNumbers, runClientSidePdfReorder
+  runClientSidePdfWatermark, runClientSidePdfPageNumbers, runClientSidePdfReorder,
+  runClientSidePdfCrop, runClientSidePdfAnnotate, PdfAnnotation
 } from '@/lib/processing/pdf/client-pdf';
 import {
   compressImage, resizeImage, convertToIco, convertSvgToPng, convertImageFormat,
-  getImageDimensions, cropImage, rotateFlipImage, addImageWatermark
+  getImageDimensions, cropImage, rotateFlipImage, addImageWatermark, removeImageBackground
 } from '@/lib/processing/image/client-image';
 
 // ── Shared sub-components ──────────────────────────────────────────────────
@@ -99,12 +101,124 @@ const NumberInput: React.FC<{
 }> = ({ label, value, min = 0, max, onChange, placeholder }) => (
   <div className="space-y-1.5">
     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</label>
-    <input type="number" min={min} max={max} value={value} placeholder={placeholder}
+    <input type="number" min={min} max={max} value={value || ''} placeholder={placeholder || String(min)}
       onChange={(e) => onChange(Math.max(min, parseInt(e.target.value) || min))}
       className="w-full p-2.5 bg-card border border-border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
     />
   </div>
 );
+
+// ── Annotation row component for PDF editor ────────────────────────────────
+interface AnnotationRowProps {
+  ann: PdfAnnotation & { id: string };
+  idx: number;
+  onChange: (id: string, patch: Partial<PdfAnnotation>) => void;
+  onRemove: (id: string) => void;
+}
+const AnnotationRow: React.FC<AnnotationRowProps> = ({ ann, idx, onChange, onRemove }) => {
+  const [expanded, setExpanded] = useState(idx === 0);
+  const typeLabels: Record<string, string> = { text: 'Add Text', cover: 'Cover/Redact Area', replace: 'Replace Text' };
+  return (
+    <div className="border border-border rounded-xl overflow-hidden">
+      <button className="w-full flex items-center justify-between px-3 py-2.5 bg-muted/30 hover:bg-muted/50 transition-colors text-left"
+        onClick={() => setExpanded(!expanded)}>
+        <div className="flex items-center gap-2">
+          <span className={`h-5 w-5 rounded-full text-[10px] font-bold flex items-center justify-center ${
+            ann.type === 'cover' ? 'bg-destructive/20 text-destructive' :
+            ann.type === 'replace' ? 'bg-amber-500/20 text-amber-400' :
+            'bg-primary/20 text-primary'
+          }`}>{idx + 1}</span>
+          <span className="text-xs font-semibold text-foreground">{typeLabels[ann.type]}</span>
+          {ann.text && <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">"{ann.text}"</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          {expanded ? <ChevronUp className="h-3 w-3 text-muted-foreground" /> : <ChevronDown className="h-3 w-3 text-muted-foreground" />}
+          <button onClick={(e) => { e.stopPropagation(); onRemove(ann.id); }}
+            className="h-5 w-5 rounded-md bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors">
+            <Minus className="h-3 w-3" />
+          </button>
+        </div>
+      </button>
+      {expanded && (
+        <div className="p-3 space-y-3 bg-card/50">
+          <div className="grid grid-cols-3 gap-2">
+            {(['text', 'cover', 'replace'] as const).map(t => (
+              <button key={t} onClick={() => onChange(ann.id, { type: t })}
+                className={`py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${ann.type === t ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground hover:border-primary/40'}`}>
+                {typeLabels[t]}
+              </button>
+            ))}
+          </div>
+          {(ann.type === 'text' || ann.type === 'replace') && (
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Text content</label>
+              <input type="text" placeholder="Enter text to add…" value={ann.text || ''}
+                onChange={(e) => onChange(ann.id, { text: e.target.value })}
+                className="w-full p-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Page #</label>
+              <input type="number" min={1} value={ann.page}
+                onChange={(e) => onChange(ann.id, { page: Math.max(1, parseInt(e.target.value) || 1) })}
+                className="w-full p-2 bg-card border border-border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40" />
+            </div>
+            {(ann.type === 'text' || ann.type === 'replace') && (
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Font size</label>
+                <input type="number" min={6} max={120} value={ann.fontSize || 12}
+                  onChange={(e) => onChange(ann.id, { fontSize: parseInt(e.target.value) || 12 })}
+                  className="w-full p-2 bg-card border border-border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40" />
+              </div>
+            )}
+          </div>
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Position &amp; Size (points from top-left)</p>
+          <div className="grid grid-cols-4 gap-2">
+            {([['X', 'x'], ['Y (top)', 'y'], ['Width', 'width'], ['Height', 'height']] as [string, keyof PdfAnnotation][]).map(([lbl, key]) => (
+              <div key={key} className="space-y-1">
+                <label className="text-[9px] text-muted-foreground">{lbl}</label>
+                <input type="number" min={0} value={(ann as any)[key] || 0}
+                  onChange={(e) => onChange(ann.id, { [key]: parseInt(e.target.value) || 0 })}
+                  className="w-full p-1.5 bg-card border border-border rounded-md text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary/40" />
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2 items-center flex-wrap">
+            {(ann.type === 'text' || ann.type === 'replace') && (
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Text color</label>
+                <input type="color" value={ann.colorHex || '#000000'}
+                  onChange={(e) => onChange(ann.id, { colorHex: e.target.value })}
+                  className="h-7 w-10 rounded border border-border cursor-pointer bg-card p-0.5" />
+              </div>
+            )}
+            {(ann.type === 'cover' || ann.type === 'replace') && (
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Fill color</label>
+                <input type="color" value={ann.fillColorHex || '#ffffff'}
+                  onChange={(e) => onChange(ann.id, { fillColorHex: e.target.value })}
+                  className="h-7 w-10 rounded border border-border cursor-pointer bg-card p-0.5" />
+              </div>
+            )}
+            {(ann.type === 'text' || ann.type === 'replace') && (
+              <>
+                <button onClick={() => onChange(ann.id, { bold: !ann.bold })}
+                  className={`px-2 py-1 rounded-md text-xs font-bold border transition-all ${ann.bold ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground hover:border-primary/40'}`}>
+                  B
+                </button>
+                <button onClick={() => onChange(ann.id, { italic: !ann.italic })}
+                  className={`px-2 py-1 rounded-md text-xs italic border transition-all ${ann.italic ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground hover:border-primary/40'}`}>
+                  I
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ── Main component ─────────────────────────────────────────────────────────
 
@@ -117,6 +231,9 @@ export const OptionsPanel: React.FC = () => {
 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [naturalDims, setNaturalDims] = useState<{ width: number; height: number } | null>(null);
+  const [annotations, setAnnotations] = useState<Array<PdfAnnotation & { id: string }>>([
+    { id: 'ann-0', page: 1, type: 'text', x: 50, y: 100, width: 300, height: 20, text: '', fontSize: 12, colorHex: '#000000', fillColorHex: '#ffffff' }
+  ]);
 
   const firstFile = files[0];
   const fileType  = firstFile?.type || '';
@@ -144,6 +261,18 @@ export const OptionsPanel: React.FC = () => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedOperation, actionName, rawFiles[0]?.name]);
+
+  // ── Annotation helpers ───────────────────────────────────────────────────
+  const addAnnotation = () => setAnnotations(prev => [
+    ...prev,
+    { id: `ann-${Date.now()}`, page: 1, type: 'text', x: 50, y: 100 + prev.length * 30, width: 300, height: 20, text: '', fontSize: 12, colorHex: '#000000', fillColorHex: '#ffffff' }
+  ]);
+
+  const updateAnnotation = (id: string, patch: Partial<PdfAnnotation>) =>
+    setAnnotations(prev => prev.map(a => a.id === id ? { ...a, ...patch } : a));
+
+  const removeAnnotation = (id: string) =>
+    setAnnotations(prev => prev.length > 1 ? prev.filter(a => a.id !== id) : prev);
 
   // ── Compress presets ─────────────────────────────────────────────────────
   const applyCompressPreset = (preset: string) => {
@@ -194,6 +323,9 @@ export const OptionsPanel: React.FC = () => {
       outputMime
     );
   };
+
+  const parsePageList = (input: string): number[] =>
+    input.split(/[\s,]+/).map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
 
   const handleStartProcess = async () => {
     if (!jobId) return;
@@ -279,6 +411,25 @@ export const OptionsPanel: React.FC = () => {
         prog(20); const blob = await runClientSidePdfReorder(rawFiles[0], order); prog(90);
         setTimeout(() => done(blob, rawFiles[0].size), 300); return;
       }
+      if (actionName === 'pdf_crop') {
+        prog(20);
+        const blob = await runClientSidePdfCrop(
+          rawFiles[0],
+          operationOptions.pdf_crop_x || 0,
+          operationOptions.pdf_crop_y || 0,
+          operationOptions.pdf_crop_w || 595,
+          operationOptions.pdf_crop_h || 842,
+          operationOptions.pdf_crop_mode || 'all',
+          parsePageList(operationOptions.pdf_crop_pages || '')
+        ); prog(90);
+        setTimeout(() => done(blob, rawFiles[0].size), 300); return;
+      }
+      if (actionName === 'pdf_annotate') {
+        const validAnnotations = annotations.filter(a => a.type === 'cover' || a.text?.trim());
+        if (!validAnnotations.length) { setError('Add at least one annotation with text or a cover area.'); setProcessing(false); return; }
+        prog(20); const blob = await runClientSidePdfAnnotate(rawFiles[0], validAnnotations); prog(90);
+        setTimeout(() => done(blob, rawFiles[0].size), 300); return;
+      }
 
       // ── Images → PDF ───────────────────────────────────────────────────
       if (actionName === 'images_to_pdf') {
@@ -287,6 +438,13 @@ export const OptionsPanel: React.FC = () => {
       }
 
       // ── Image operations ───────────────────────────────────────────────
+      if (isImage && actionName === 'remove_bg') {
+        prog(5);
+        const format = (operationOptions.remove_bg_format || 'png') as 'png' | 'jpeg' | 'webp';
+        const bgFill = operationOptions.remove_bg_fill || undefined;
+        const blob = await removeImageBackground(rawFiles[0], format, bgFill, (p) => prog(p)); prog(95);
+        setTimeout(() => done(blob, rawFiles[0].size), 200); return;
+      }
       if (isImage && selectedOperation === 'compress') {
         prog(20);
         const q = (operationOptions.quality || 82) / 100;
@@ -361,11 +519,126 @@ export const OptionsPanel: React.FC = () => {
     }
   };
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
-  const parsePageList = (input: string): number[] =>
-    input.split(/[\s,]+/).map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
-
   // ── Option renderers ──────────────────────────────────────────────────────
+
+  const renderRemoveBgOptions = () => (
+    <div className="space-y-5">
+      <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/5 border border-blue-500/20">
+        <div className="flex items-start gap-3">
+          <div className="h-9 w-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+            <Eraser className="h-4 w-4 text-blue-400" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-foreground">AI Background Removal</p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">Uses a machine-learning model running entirely in your browser. On first use, the model (~15 MB) downloads automatically. No upload required.</p>
+          </div>
+        </div>
+      </div>
+      <PresetRow label="Output format" value={operationOptions.remove_bg_format || 'png'}
+        onChange={(v) => updateOptions({ remove_bg_format: v, remove_bg_fill: v === 'png' ? undefined : operationOptions.remove_bg_fill })}
+        options={[
+          { value: 'png', label: 'PNG (transparent)', hint: 'Preserves alpha channel — best for logos and cutouts' },
+          { value: 'jpeg', label: 'JPEG + fill', hint: 'Flat background color — smaller file size' },
+          { value: 'webp', label: 'WEBP + fill', hint: 'Modern format with optional background' },
+        ]}
+      />
+      {(operationOptions.remove_bg_format === 'jpeg' || operationOptions.remove_bg_format === 'webp') && (
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Background fill color</label>
+          <div className="flex items-center gap-3">
+            <input type="color" value={operationOptions.remove_bg_fill || '#ffffff'}
+              onChange={(e) => updateOptions({ remove_bg_fill: e.target.value })}
+              className="h-9 w-14 rounded-lg border border-border cursor-pointer bg-card p-0.5" />
+            <div className="flex gap-2">
+              {['#ffffff', '#000000', '#f3f4f6', '#dbeafe', '#fef3c7'].map(c => (
+                <button key={c} onClick={() => updateOptions({ remove_bg_fill: c })}
+                  className="h-7 w-7 rounded-lg border-2 transition-all"
+                  style={{ backgroundColor: c, borderColor: operationOptions.remove_bg_fill === c ? '#6366f1' : 'transparent' }} />
+              ))}
+            </div>
+            <span className="text-xs text-muted-foreground font-mono">{operationOptions.remove_bg_fill || '#ffffff'}</span>
+          </div>
+        </div>
+      )}
+      <div className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-xl border border-border leading-relaxed">
+        <strong className="text-foreground">Tip:</strong> Works best on photos with distinct subjects (people, products, animals). Complex backgrounds with similar colors to the subject may have imperfect edges.
+      </div>
+    </div>
+  );
+
+  const renderPdfCropOptions = () => (
+    <div className="space-y-5">
+      <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs text-amber-400 leading-relaxed">
+        PDF coordinates start from the <strong>bottom-left</strong> corner in points (1 pt ≈ 0.353 mm). A standard A4 page is 595 × 842 pts, US Letter is 612 × 792 pts.
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <NumberInput label="X (left offset, pt)" value={operationOptions.pdf_crop_x || 0} min={0}
+          onChange={(v) => updateOptions({ pdf_crop_x: v })} />
+        <NumberInput label="Y (bottom offset, pt)" value={operationOptions.pdf_crop_y || 0} min={0}
+          onChange={(v) => updateOptions({ pdf_crop_y: v })} />
+        <NumberInput label="Crop width (pt)" value={operationOptions.pdf_crop_w || 595} min={1}
+          onChange={(v) => updateOptions({ pdf_crop_w: v })} />
+        <NumberInput label="Crop height (pt)" value={operationOptions.pdf_crop_h || 842} min={1}
+          onChange={(v) => updateOptions({ pdf_crop_h: v })} />
+      </div>
+      <PresetRow label="Common page sizes (crop to)" value=""
+        onChange={(v) => { const [w, h] = (v as string).split('x').map(Number); updateOptions({ pdf_crop_x: 0, pdf_crop_y: 0, pdf_crop_w: w, pdf_crop_h: h }); }}
+        options={[
+          { value: '595x842', label: 'A4' }, { value: '612x792', label: 'US Letter' },
+          { value: '420x595', label: 'A5' }, { value: '297x420', label: 'A6' },
+        ]}
+      />
+      <PresetRow label="Apply to pages" value={operationOptions.pdf_crop_mode || 'all'}
+        onChange={(v) => updateOptions({ pdf_crop_mode: v })}
+        options={[ { value: 'all', label: 'All pages' }, { value: 'odd', label: 'Odd pages' }, { value: 'even', label: 'Even pages' }, { value: 'specific', label: 'Specific pages' } ]}
+      />
+      {operationOptions.pdf_crop_mode === 'specific' && (
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Page numbers</label>
+          <input type="text" placeholder="e.g. 1, 3, 5-7"
+            value={operationOptions.pdf_crop_pages || ''}
+            onChange={(e) => updateOptions({ pdf_crop_pages: e.target.value })}
+            className="w-full p-2.5 bg-card border border-border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
+          />
+        </div>
+      )}
+      <InfoBox icon={<Crop className="h-4 w-4 text-primary" />} text="Sets the CropBox on each page — the area outside is hidden but not permanently deleted. Runs client-side." color="bg-primary/5 border-primary/15" />
+    </div>
+  );
+
+  const renderPdfAnnotateOptions = () => (
+    <div className="space-y-4">
+      <div className="p-3 rounded-xl bg-primary/5 border border-primary/15 text-xs text-muted-foreground leading-relaxed">
+        Add text, cover/redact areas, or replace content on any page. Coordinates are in <strong className="text-foreground">points from the top-left corner</strong> (Y increases downward). A4 = 595 × 842 pt.
+      </div>
+      <div className="space-y-3">
+        {annotations.map((ann, idx) => (
+          <AnnotationRow key={ann.id} ann={ann} idx={idx} onChange={updateAnnotation} onRemove={removeAnnotation} />
+        ))}
+      </div>
+      <button onClick={addAnnotation}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-primary/40 text-primary text-xs font-semibold hover:bg-primary/5 hover:border-primary/60 transition-all">
+        <Plus className="h-4 w-4" /> Add annotation
+      </button>
+      <div className="grid grid-cols-3 gap-2 text-[10px]">
+        <div className="p-2 rounded-lg bg-primary/5 border border-primary/15 text-center">
+          <Type className="h-3.5 w-3.5 mx-auto mb-1 text-primary" />
+          <span className="text-foreground font-semibold block">Add Text</span>
+          <span className="text-muted-foreground">Overlay new text on the page</span>
+        </div>
+        <div className="p-2 rounded-lg bg-destructive/5 border border-destructive/15 text-center">
+          <Eraser className="h-3.5 w-3.5 mx-auto mb-1 text-destructive" />
+          <span className="text-foreground font-semibold block">Cover/Redact</span>
+          <span className="text-muted-foreground">Block out existing content</span>
+        </div>
+        <div className="p-2 rounded-lg bg-amber-500/5 border border-amber-500/15 text-center">
+          <ScanText className="h-3.5 w-3.5 mx-auto mb-1 text-amber-400" />
+          <span className="text-foreground font-semibold block">Replace Text</span>
+          <span className="text-muted-foreground">Cover + write new text</span>
+        </div>
+      </div>
+    </div>
+  );
 
   const renderCompressOptions = () => {
     if (isImage) return (
@@ -396,16 +669,10 @@ export const OptionsPanel: React.FC = () => {
         <PresetRow label="Quality preset"
           value={operationOptions.crf <= 20 ? 'high' : operationOptions.crf <= 26 ? 'balanced' : 'small'}
           onChange={(v) => { const m: any = { high: 20, balanced: 26, small: 32 }; if (m[v as string]) updateOptions({ crf: m[v as string] }); }}
-          options={[
-            { value: 'high', label: 'High quality', hint: 'CRF 20' },
-            { value: 'balanced', label: 'Balanced', hint: 'CRF 26' },
-            { value: 'small', label: 'Compact', hint: 'CRF 32' },
-          ]}
+          options={[ { value: 'high', label: 'High quality', hint: 'CRF 20' }, { value: 'balanced', label: 'Balanced', hint: 'CRF 26' }, { value: 'small', label: 'Compact', hint: 'CRF 32' } ]}
         />
         <Slider id="crf-s" label="CRF" unit="" value={operationOptions.crf || 28} min={18} max={35}
-          onChange={(v) => updateOptions({ crf: v })}
-          hint="Lower = higher quality, larger file."
-        />
+          onChange={(v) => updateOptions({ crf: v })} hint="Lower = higher quality, larger file." />
         {showAdvanced && <Select id="preset-s" label="Encoder Speed" value={operationOptions.preset || 'medium'}
           options={[ { value: 'ultrafast', label: 'Ultrafast' }, { value: 'fast', label: 'Fast' }, { value: 'medium', label: 'Medium' }, { value: 'slow', label: 'Slow' } ]}
           onChange={(v) => updateOptions({ preset: v })} />}
@@ -446,10 +713,7 @@ export const OptionsPanel: React.FC = () => {
       <div className="space-y-5">
         <PresetRow label="Enhancement preset" value={operationOptions.enhance_preset || 'custom'}
           onChange={(v) => { if (v !== 'custom') applyEnhancePreset(v as string); else updateOptions({ enhance_preset: 'custom' }); }}
-          options={[
-            { value: 'natural', label: 'Natural' }, { value: 'vivid', label: 'Vivid' },
-            { value: 'sharp', label: 'Ultra Sharp' }, { value: 'clean', label: 'Denoise' }, { value: 'custom', label: 'Custom' },
-          ]}
+          options={[ { value: 'natural', label: 'Natural' }, { value: 'vivid', label: 'Vivid' }, { value: 'sharp', label: 'Ultra Sharp' }, { value: 'clean', label: 'Denoise' }, { value: 'custom', label: 'Custom' } ]}
         />
         {(['brightness', 'contrast', 'sharpness'] as const).map((k) => (
           <Slider key={k} id={`${k}-s`} label={k.charAt(0).toUpperCase() + k.slice(1)} unit="x"
@@ -474,17 +738,14 @@ export const OptionsPanel: React.FC = () => {
         options={[ { value: 'all', label: 'Every page' }, { value: 'every', label: 'Every N pages' }, { value: 'range', label: 'Page range' } ]}
       />
       {operationOptions.split_mode === 'every' && (
-        <NumberInput label="Pages per chunk" value={operationOptions.split_every || 1} min={1}
-          onChange={(v) => updateOptions({ split_every: v })} />
+        <NumberInput label="Pages per chunk" value={operationOptions.split_every || 1} min={1} onChange={(v) => updateOptions({ split_every: v })} />
       )}
       {operationOptions.split_mode === 'range' && (
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Page ranges</label>
-          <input type="text" placeholder="e.g. 1-3, 5, 7-10"
-            value={operationOptions.split_range || ''}
+          <input type="text" placeholder="e.g. 1-3, 5, 7-10" value={operationOptions.split_range || ''}
             onChange={(e) => updateOptions({ split_range: e.target.value })}
-            className="w-full p-2.5 bg-card border border-border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
-          />
+            className="w-full p-2.5 bg-card border border-border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40" />
           <p className="text-[10px] text-muted-foreground">Comma-separated pages or ranges</p>
         </div>
       )}
@@ -515,13 +776,9 @@ export const OptionsPanel: React.FC = () => {
       </button>
       <Select id="resize-fmt" label="Output Format" value={operationOptions.resize_format || 'png'}
         options={[ { value: 'png', label: 'PNG — Lossless' }, { value: 'jpeg', label: 'JPEG — Smaller' }, { value: 'webp', label: 'WEBP — Modern' } ]}
-        onChange={(v) => updateOptions({ resize_format: v })}
-      />
-      <InfoBox icon={<Maximize2 className="h-4 w-4 text-primary" />} text="Runs entirely in your browser using Canvas API." color="bg-primary/5 border-primary/15" />
+        onChange={(v) => updateOptions({ resize_format: v })} />
     </div>
   );
-
-  // ── PDF Editor panels ─────────────────────────────────────────────────────
 
   const renderPdfRotateOptions = () => (
     <div className="space-y-5">
@@ -536,17 +793,12 @@ export const OptionsPanel: React.FC = () => {
       {operationOptions.rotate_pages_mode === 'specific' && (
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Page numbers</label>
-          <input type="text" placeholder="e.g. 1, 3, 5-7"
-            value={operationOptions.rotate_pages_input || ''}
-            onChange={(e) => {
-              updateOptions({ rotate_pages_input: e.target.value, rotate_pages_list: parsePageList(e.target.value) });
-            }}
-            className="w-full p-2.5 bg-card border border-border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
-          />
-          <p className="text-[10px] text-muted-foreground">Comma-separated page numbers or ranges</p>
+          <input type="text" placeholder="e.g. 1, 3, 5-7" value={operationOptions.rotate_pages_input || ''}
+            onChange={(e) => updateOptions({ rotate_pages_input: e.target.value, rotate_pages_list: parsePageList(e.target.value) })}
+            className="w-full p-2.5 bg-card border border-border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40" />
         </div>
       )}
-      <InfoBox icon={<RotateCw className="h-4 w-4 text-primary" />} text="Page rotation is applied non-destructively to the PDF structure. Runs client-side." color="bg-primary/5 border-primary/15" />
+      <InfoBox icon={<RotateCw className="h-4 w-4 text-primary" />} text="Page rotation is applied non-destructively. Runs client-side." color="bg-primary/5 border-primary/15" />
     </div>
   );
 
@@ -554,14 +806,12 @@ export const OptionsPanel: React.FC = () => {
     <div className="space-y-5">
       <div className="space-y-1.5">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pages to delete</label>
-        <input type="text" placeholder="e.g. 1, 3, 5-8"
-          value={operationOptions.delete_pages || ''}
+        <input type="text" placeholder="e.g. 1, 3, 5-8" value={operationOptions.delete_pages || ''}
           onChange={(e) => updateOptions({ delete_pages: e.target.value })}
-          className="w-full p-2.5 bg-card border border-border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
-        />
-        <p className="text-[10px] text-muted-foreground">Enter comma-separated page numbers or ranges. Remaining pages keep their order.</p>
+          className="w-full p-2.5 bg-card border border-border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40" />
+        <p className="text-[10px] text-muted-foreground">Comma-separated page numbers or ranges. Remaining pages keep their order.</p>
       </div>
-      <InfoBox icon={<Trash2 className="h-4 w-4 text-destructive" />} text="Specified pages will be permanently removed from the output PDF. The original file is never modified." color="bg-destructive/5 border-destructive/15" />
+      <InfoBox icon={<Trash2 className="h-4 w-4 text-destructive" />} text="Specified pages will be permanently removed from the output PDF." color="bg-destructive/5 border-destructive/15" />
     </div>
   );
 
@@ -569,20 +819,16 @@ export const OptionsPanel: React.FC = () => {
     <div className="space-y-5">
       <div className="space-y-1.5">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Watermark text</label>
-        <input type="text" placeholder="e.g. CONFIDENTIAL, DRAFT, © 2025"
-          value={operationOptions.watermark_text || ''}
+        <input type="text" placeholder="e.g. CONFIDENTIAL, DRAFT, © 2025" value={operationOptions.watermark_text || ''}
           onChange={(e) => updateOptions({ watermark_text: e.target.value })}
-          className="w-full p-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-        />
+          className="w-full p-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
       </div>
       <PresetRow label="Position" value={operationOptions.watermark_position || 'diagonal'}
         onChange={(v) => updateOptions({ watermark_position: v })}
         options={[ { value: 'diagonal', label: 'Diagonal' }, { value: 'center', label: 'Center' }, { value: 'bottom', label: 'Footer' }, { value: 'top', label: 'Header' } ]}
       />
-      <Slider id="wm-size" label="Font Size" unit="pt" value={operationOptions.watermark_size || 52} min={16} max={120}
-        onChange={(v) => updateOptions({ watermark_size: v })} />
-      <Slider id="wm-opacity" label="Opacity" unit="%" value={operationOptions.watermark_opacity || 18} min={5} max={80}
-        onChange={(v) => updateOptions({ watermark_opacity: v })} hint="Lower opacity = more transparent watermark." />
+      <Slider id="wm-size" label="Font Size" unit="pt" value={operationOptions.watermark_size || 52} min={16} max={120} onChange={(v) => updateOptions({ watermark_size: v })} />
+      <Slider id="wm-opacity" label="Opacity" unit="%" value={operationOptions.watermark_opacity || 18} min={5} max={80} onChange={(v) => updateOptions({ watermark_opacity: v })} hint="Lower opacity = more transparent." />
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Text color</label>
@@ -594,11 +840,9 @@ export const OptionsPanel: React.FC = () => {
           </div>
         </div>
         {operationOptions.watermark_position === 'diagonal' && (
-          <NumberInput label="Rotation (°)" value={operationOptions.watermark_rotation ?? -45} min={-90} max={90}
-            onChange={(v) => updateOptions({ watermark_rotation: v })} />
+          <NumberInput label="Rotation (°)" value={operationOptions.watermark_rotation ?? -45} min={-90} max={90} onChange={(v) => updateOptions({ watermark_rotation: v })} />
         )}
       </div>
-      <InfoBox icon={<Stamp className="h-4 w-4 text-primary" />} text="Watermark is embedded on every page. Runs client-side with pdf-lib." color="bg-primary/5 border-primary/15" />
     </div>
   );
 
@@ -623,19 +867,9 @@ export const OptionsPanel: React.FC = () => {
             className="w-full p-2.5 bg-card border border-border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40" />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <NumberInput label="Font size (pt)" value={operationOptions.page_num_size || 10} min={6} max={24} onChange={(v) => updateOptions({ page_num_size: v })} />
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Color</label>
-          <input type="color" value={operationOptions.page_num_color || '#555555'}
-            onChange={(e) => updateOptions({ page_num_color: e.target.value })}
-            className="h-9 w-full rounded-lg border border-border cursor-pointer bg-card p-0.5" />
-        </div>
-      </div>
       <div className="p-3 bg-muted/30 rounded-xl border border-border text-xs text-muted-foreground">
         Preview: <span className="font-mono text-foreground">{operationOptions.page_num_prefix || ''}{operationOptions.page_num_start || 1}{operationOptions.page_num_suffix || ''}</span>
       </div>
-      <InfoBox icon={<Hash className="h-4 w-4 text-primary" />} text="Page numbers are added as text to every page. Runs client-side with pdf-lib." color="bg-primary/5 border-primary/15" />
     </div>
   );
 
@@ -643,18 +877,13 @@ export const OptionsPanel: React.FC = () => {
     <div className="space-y-5">
       <div className="space-y-1.5">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">New page order</label>
-        <input type="text" placeholder="e.g. 3, 1, 2, 4, 5"
-          value={operationOptions.reorder_pages || ''}
+        <input type="text" placeholder="e.g. 3, 1, 2, 4, 5" value={operationOptions.reorder_pages || ''}
           onChange={(e) => updateOptions({ reorder_pages: e.target.value })}
-          className="w-full p-2.5 bg-card border border-border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
-        />
+          className="w-full p-2.5 bg-card border border-border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40" />
         <p className="text-[10px] text-muted-foreground">Enter all page numbers in the desired order. Pages not listed will be omitted.</p>
       </div>
-      <InfoBox icon={<AlignJustify className="h-4 w-4 text-primary" />} text="Only the pages you list (in the order you specify) will appear in the output PDF." color="bg-primary/5 border-primary/15" />
     </div>
   );
-
-  // ── Image Editor panels ───────────────────────────────────────────────────
 
   const renderImageCropOptions = () => (
     <div className="space-y-5">
@@ -667,8 +896,7 @@ export const OptionsPanel: React.FC = () => {
         onChange={(v) => {
           if (!naturalDims) return;
           const [rw, rh] = (v as string).split(':').map(Number);
-          const maxW = naturalDims.width;
-          const maxH = naturalDims.height;
+          const maxW = naturalDims.width; const maxH = naturalDims.height;
           let w = maxW, h = Math.round(maxW * rh / rw);
           if (h > maxH) { h = maxH; w = Math.round(maxH * rw / rh); }
           updateOptions({ crop_x: Math.round((maxW - w) / 2), crop_y: Math.round((maxH - h) / 2), crop_width: w, crop_height: h });
@@ -681,7 +909,6 @@ export const OptionsPanel: React.FC = () => {
         <NumberInput label="Crop width (px)" value={operationOptions.crop_width || naturalDims?.width || 800} min={1} max={naturalDims?.width} onChange={(v) => updateOptions({ crop_width: v })} />
         <NumberInput label="Crop height (px)" value={operationOptions.crop_height || naturalDims?.height || 600} min={1} max={naturalDims?.height} onChange={(v) => updateOptions({ crop_height: v })} />
       </div>
-      <InfoBox icon={<Crop className="h-4 w-4 text-primary" />} text="Crop runs in your browser using Canvas API — no upload required." color="bg-primary/5 border-primary/15" />
     </div>
   );
 
@@ -693,8 +920,7 @@ export const OptionsPanel: React.FC = () => {
           {[{ deg: 90, label: '90° CW' }, { deg: 180, label: '180°' }, { deg: 270, label: '90° CCW' }].map(({ deg, label }) => (
             <button key={deg} onClick={() => updateOptions({ rotate_deg: deg })}
               className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${operationOptions.rotate_deg === deg ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground hover:border-primary/40'}`}>
-              <RotateCw className={`h-3.5 w-3.5 ${deg === 270 ? 'scale-x-[-1]' : ''}`} />
-              {label}
+              <RotateCw className={`h-3.5 w-3.5 ${deg === 270 ? 'scale-x-[-1]' : ''}`} />{label}
             </button>
           ))}
         </div>
@@ -712,7 +938,6 @@ export const OptionsPanel: React.FC = () => {
           </button>
         </div>
       </div>
-      <InfoBox icon={<FlipHorizontal className="h-4 w-4 text-primary" />} text="Rotation and flip operations run client-side with Canvas API — no upload required." color="bg-primary/5 border-primary/15" />
     </div>
   );
 
@@ -720,22 +945,16 @@ export const OptionsPanel: React.FC = () => {
     <div className="space-y-5">
       <div className="space-y-1.5">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Watermark text</label>
-        <input type="text" placeholder="e.g. © 2025 My Brand, CONFIDENTIAL"
-          value={operationOptions.img_watermark_text || ''}
+        <input type="text" placeholder="e.g. © 2025 My Brand, CONFIDENTIAL" value={operationOptions.img_watermark_text || ''}
           onChange={(e) => updateOptions({ img_watermark_text: e.target.value })}
-          className="w-full p-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-        />
+          className="w-full p-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
       </div>
       <PresetRow label="Position" value={operationOptions.img_wm_position || 'diagonal'}
         onChange={(v) => updateOptions({ img_wm_position: v })}
-        options={[
-          { value: 'diagonal', label: 'Diagonal' }, { value: 'center', label: 'Center' },
-          { value: 'bottom-right', label: 'Bottom right' }, { value: 'bottom-left', label: 'Bottom left' },
-          { value: 'bottom-center', label: 'Bottom center' }, { value: 'top-right', label: 'Top right' },
-        ]}
+        options={[ { value: 'diagonal', label: 'Diagonal' }, { value: 'center', label: 'Center' }, { value: 'bottom-right', label: 'Bottom right' }, { value: 'bottom-left', label: 'Bottom left' }, { value: 'bottom-center', label: 'Bottom center' }, { value: 'top-right', label: 'Top right' } ]}
       />
       <Slider id="img-wm-opacity" label="Opacity" unit="%" value={operationOptions.img_wm_opacity || 45} min={5} max={100}
-        onChange={(v) => updateOptions({ img_wm_opacity: v })} hint="Lower = more transparent. Adjust to taste." />
+        onChange={(v) => updateOptions({ img_wm_opacity: v })} hint="Lower = more transparent." />
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Text color</label>
@@ -746,15 +965,13 @@ export const OptionsPanel: React.FC = () => {
             <span className="text-xs text-muted-foreground font-mono">{operationOptions.img_wm_color || '#ffffff'}</span>
           </div>
         </div>
-        <NumberInput label="Font size (px)" value={operationOptions.img_wm_size || 0} min={0} max={300}
-          placeholder="Auto" onChange={(v) => updateOptions({ img_wm_size: v || undefined })} />
+        <NumberInput label="Font size (px)" value={operationOptions.img_wm_size || 0} min={0} max={300} placeholder="Auto" onChange={(v) => updateOptions({ img_wm_size: v || undefined })} />
       </div>
       <button onClick={() => updateOptions({ img_wm_tile: !operationOptions.img_wm_tile })}
         className={`flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-xl border transition-all w-full ${operationOptions.img_wm_tile ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-card border-border text-muted-foreground hover:border-primary/30'}`}>
         <PenTool className="h-3.5 w-3.5" />
-        {operationOptions.img_wm_tile ? 'Tiled repeat: ON (covers full image)' : 'Tiled repeat: OFF (single stamp)'}
+        {operationOptions.img_wm_tile ? 'Tiled repeat: ON' : 'Tiled repeat: OFF (single stamp)'}
       </button>
-      <InfoBox icon={<PenTool className="h-4 w-4 text-primary" />} text="Watermark is drawn onto the image using Canvas API — runs entirely in your browser." color="bg-primary/5 border-primary/15" />
     </div>
   );
 
@@ -762,7 +979,7 @@ export const OptionsPanel: React.FC = () => {
     if (actionName === 'images_to_pdf') return <InfoBox icon={<Image className="h-4 w-4 text-primary" />} text={`${files.length} image${files.length !== 1 ? 's' : ''} will be packed into a PDF in upload order.`} color="bg-primary/5 border-primary/15" />;
     if (actionName === 'to_ico') {
       const sel: number[] = operationOptions.ico_sizes || [16, 32, 48, 64];
-      const toggle = (s: number) => { const cur = operationOptions.ico_sizes || [16, 32, 48, 64]; const next = cur.includes(s) ? cur.filter((x: number) => x !== s) : [...cur, s].sort((a, b) => a - b); if (next.length) updateOptions({ ico_sizes: next }); };
+      const toggle = (s: number) => { const cur = operationOptions.ico_sizes || [16, 32, 48, 64]; const next = cur.includes(s) ? cur.filter((x: number) => x !== s) : [...cur, s].sort((a: number, b: number) => a - b); if (next.length) updateOptions({ ico_sizes: next }); };
       return (
         <div className="space-y-5">
           <div className="space-y-2">
@@ -775,9 +992,7 @@ export const OptionsPanel: React.FC = () => {
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-muted-foreground">Selected: {sel.join(', ')} px — all sizes embedded in one .ico file.</p>
           </div>
-          <InfoBox icon={<MonitorSmartphone className="h-4 w-4 text-primary" />} text="ICO files contain multiple resolutions — browsers pick the best match. Runs client-side." color="bg-primary/5 border-primary/15" />
         </div>
       );
     }
@@ -791,48 +1006,36 @@ export const OptionsPanel: React.FC = () => {
           <NumberInput label="Width (px)" value={operationOptions.svg_width || 512} min={1} max={4096} onChange={(v) => updateOptions({ svg_width: v })} />
           <NumberInput label="Height (px)" value={operationOptions.svg_height || 512} min={1} max={4096} onChange={(v) => updateOptions({ svg_height: v })} />
         </div>
-        <InfoBox icon={<Globe className="h-4 w-4 text-primary" />} text="SVG is rendered to canvas and exported as PNG. Runs client-side." color="bg-primary/5 border-primary/15" />
       </div>
     );
     if (isImage && (actionName === 'convert_format' || actionName === 'convert')) return (
       <div className="space-y-5">
         <PresetRow label="Target format" value={operationOptions.target_format || 'webp'}
           onChange={(v) => updateOptions({ target_format: v })}
-          options={[ { value: 'webp', label: 'WEBP', hint: 'Modern, highly compressed' }, { value: 'png', label: 'PNG', hint: 'Lossless, transparency' }, { value: 'jpeg', label: 'JPEG', hint: 'Universal, great for photos' } ]}
+          options={[ { value: 'webp', label: 'WEBP' }, { value: 'png', label: 'PNG' }, { value: 'jpeg', label: 'JPEG' } ]}
         />
         <Slider id="fmt-quality" label="Output Quality" unit="%" value={operationOptions.quality || 92} min={10} max={100}
           onChange={(v) => updateOptions({ quality: v })} hint="Only applies to JPEG and WEBP." />
-        <InfoBox icon={<RefreshCw className="h-4 w-4 text-primary" />} text="Conversion runs client-side — no upload required." color="bg-primary/5 border-primary/15" />
       </div>
     );
-    if (actionName === 'pdf_to_docx') return <InfoBox icon={<ArrowLeftRight className="h-4 w-4 text-primary" />} text="PDF will be parsed into an editable DOCX with preserved paragraph structure and fonts." />;
-    if (actionName === 'pdf_to_pptx') return <InfoBox icon={<ArrowLeftRight className="h-4 w-4 text-primary" />} text="Each PDF page becomes a slide in the exported PPTX presentation." />;
+    const msgs: Record<string, string> = {
+      pdf_to_docx: 'PDF will be parsed into an editable DOCX.', pdf_to_pptx: 'Each PDF page becomes a slide in the exported PPTX.',
+      docx_to_pdf: 'Word document rendered into a high-quality paginated PDF.', pptx_to_pdf: 'Each PowerPoint slide becomes a PDF page.',
+      xlsx_to_csv: 'Spreadsheet cells exported as comma-separated rows.', csv_to_xlsx: 'CSV imported into a formatted Excel workbook.',
+      md_to_html: 'Markdown compiled into a styled HTML page.', html_to_md: 'HTML structure converted into clean Markdown.',
+    };
+    if (msgs[actionName]) return <InfoBox icon={<ArrowLeftRight className="h-4 w-4 text-primary" />} text={msgs[actionName]} />;
     if (actionName === 'pdf_to_images') return (
       <div className="space-y-4">
         <Select id="dpi-sel" label="Output Resolution" value={operationOptions.dpi || 150}
-          options={[ { value: 72, label: '72 DPI — Screen / web' }, { value: 150, label: '150 DPI — Standard' }, { value: 300, label: '300 DPI — Print quality' } ]}
-          onChange={(v) => updateOptions({ dpi: parseInt(v) })}
-        />
-        <Select id="img-fmt" label="Image Format" value={operationOptions.img_format || 'png'}
-          options={[ { value: 'png', label: 'PNG — Lossless' }, { value: 'jpeg', label: 'JPEG — Smaller' }, { value: 'webp', label: 'WEBP — Optimized' } ]}
-          onChange={(v) => updateOptions({ img_format: v })}
-        />
+          options={[ { value: 72, label: '72 DPI — Screen' }, { value: 150, label: '150 DPI — Standard' }, { value: 300, label: '300 DPI — Print' } ]}
+          onChange={(v) => updateOptions({ dpi: parseInt(v) })} />
       </div>
     );
-    const officeMessages: Record<string, string> = {
-      docx_to_pdf: 'Word document will be rendered into a high-quality paginated PDF.',
-      pptx_to_pdf: 'Each PowerPoint slide becomes a page in the exported PDF.',
-      xlsx_to_csv: 'All spreadsheet cells exported as comma-separated rows.',
-      csv_to_xlsx: 'CSV data imported into a formatted Excel workbook.',
-      md_to_html:  'Markdown compiled into a styled HTML page.',
-      html_to_md:  'HTML structure converted into clean Markdown syntax.',
-    };
-    if (officeMessages[actionName]) return <InfoBox icon={<ArrowLeftRight className="h-4 w-4 text-primary" />} text={officeMessages[actionName]} />;
     if (actionName === 'video_to_audio') return (
       <Select id="audio-fmt-ex" label="Audio Format" value={operationOptions.audio_format || 'mp3'}
-        options={[ { value: 'mp3', label: 'MP3 — Universal' }, { value: 'aac', label: 'AAC — Higher quality' }, { value: 'wav', label: 'WAV — Lossless' }, { value: 'ogg', label: 'OGG — Open-source' } ]}
-        onChange={(v) => updateOptions({ audio_format: v })}
-      />
+        options={[ { value: 'mp3', label: 'MP3 — Universal' }, { value: 'aac', label: 'AAC — Higher quality' }, { value: 'wav', label: 'WAV — Lossless' } ]}
+        onChange={(v) => updateOptions({ audio_format: v })} />
     );
     if (actionName === 'video_to_gif') return (
       <div className="space-y-5">
@@ -840,18 +1043,21 @@ export const OptionsPanel: React.FC = () => {
           <NumberInput label="Start (seconds)" value={operationOptions.start_time || 0} min={0} onChange={(v) => updateOptions({ start_time: v })} />
           <NumberInput label="End (seconds)" value={operationOptions.end_time || 5} min={1} onChange={(v) => updateOptions({ end_time: v })} />
         </div>
-        <Slider id="gif-fps" label="Frame Rate" unit=" fps" value={operationOptions.gif_fps || 10} min={5} max={30} onChange={(v) => updateOptions({ gif_fps: v })} hint="Higher FPS = smoother but larger." />
+        <Slider id="gif-fps" label="Frame Rate" unit=" fps" value={operationOptions.gif_fps || 10} min={5} max={30} onChange={(v) => updateOptions({ gif_fps: v })} />
       </div>
     );
     return <InfoBox icon={<RefreshCw className="h-4 w-4 text-primary" />} text="Convert file to the selected destination format." />;
   };
 
   const renderEditOptions = () => {
+    if (actionName === 'pdf_crop')         return renderPdfCropOptions();
+    if (actionName === 'pdf_annotate')     return renderPdfAnnotateOptions();
     if (actionName === 'pdf_rotate')       return renderPdfRotateOptions();
     if (actionName === 'pdf_delete')       return renderPdfDeleteOptions();
     if (actionName === 'pdf_watermark')    return renderPdfWatermarkOptions();
     if (actionName === 'pdf_page_numbers') return renderPdfPageNumbersOptions();
     if (actionName === 'pdf_reorder')      return renderPdfReorderOptions();
+    if (actionName === 'remove_bg')        return renderRemoveBgOptions();
     if (actionName === 'image_crop')       return renderImageCropOptions();
     if (actionName === 'image_rotate')     return renderImageRotateOptions();
     if (actionName === 'image_watermark')  return renderImageWatermarkOptions();
@@ -861,10 +1067,9 @@ export const OptionsPanel: React.FC = () => {
           <NumberInput label="Start (seconds)" value={operationOptions.start_time || 0} min={0} onChange={(v) => updateOptions({ start_time: v })} />
           <NumberInput label="End (seconds)" value={operationOptions.end_time || 10} min={1} onChange={(v) => updateOptions({ end_time: v })} />
         </div>
-        <InfoBox icon={<Video className="h-4 w-4 text-violet-400" />} text="Enter timestamps in seconds to extract your desired clip." />
       </div>
     );
-    if (actionName === 'docx_cleanup') return <InfoBox icon={<Sliders className="h-4 w-4 text-primary" />} text="Clears duplicate blank paragraphs, aligns margins to 1 inch, and normalizes font weights." />;
+    if (actionName === 'docx_cleanup') return <InfoBox icon={<Sliders className="h-4 w-4 text-primary" />} text="Clears duplicate blank paragraphs, aligns margins, and normalizes font weights." />;
     return null;
   };
 
@@ -876,19 +1081,19 @@ export const OptionsPanel: React.FC = () => {
       case 'edit':     return renderEditOptions();
       case 'split':    return renderSplitOptions();
       case 'resize':   return renderResizeOptions();
-      case 'merge':    return <InfoBox icon={<FileText className="h-4 w-4 text-primary" />} text="Files will be merged in upload order. Drag to reorder in the queue above." color="bg-primary/5 border-primary/15" />;
+      case 'merge':    return <InfoBox icon={<FileText className="h-4 w-4 text-primary" />} text="Files will be merged in upload order." color="bg-primary/5 border-primary/15" />;
       default: return null;
     }
   };
 
-  const operationLabels: Record<string, string> = {
-    compress: 'Compress', enhance: 'Enhance', convert: 'Convert', resize: 'Resize',
-    edit: 'Edit', split: 'Split PDF', merge: 'Merge PDFs',
-  };
   const actionLabels: Record<string, string> = {
+    pdf_crop: 'Crop PDF Pages', pdf_annotate: 'Edit PDF',
     pdf_rotate: 'Rotate Pages', pdf_delete: 'Delete Pages', pdf_watermark: 'Add Watermark',
     pdf_page_numbers: 'Add Page Numbers', pdf_reorder: 'Reorder Pages',
-    image_crop: 'Crop Image', image_rotate: 'Rotate & Flip', image_watermark: 'Add Watermark',
+    remove_bg: 'Remove Background', image_crop: 'Crop Image', image_rotate: 'Rotate & Flip', image_watermark: 'Add Watermark',
+  };
+  const operationLabels: Record<string, string> = {
+    compress: 'Compress', enhance: 'Enhance', convert: 'Convert', resize: 'Resize', edit: 'Edit', split: 'Split PDF', merge: 'Merge PDFs',
   };
 
   const panelTitle = actionLabels[actionName] || operationLabels[selectedOperation] || 'Operation';
@@ -910,8 +1115,7 @@ export const OptionsPanel: React.FC = () => {
           {selectedOperation === 'compress' && isVideo && (
             <button onClick={() => setShowAdvanced(!showAdvanced)}
               className="flex items-center gap-1.5 px-2.5 py-1 bg-secondary border border-border text-secondary-foreground rounded-lg text-xs font-semibold hover:bg-muted transition-all">
-              <Settings2 className="h-3 w-3" />
-              {showAdvanced ? 'Simple' : 'Advanced'}
+              <Settings2 className="h-3 w-3" />{showAdvanced ? 'Simple' : 'Advanced'}
             </button>
           )}
         </div>

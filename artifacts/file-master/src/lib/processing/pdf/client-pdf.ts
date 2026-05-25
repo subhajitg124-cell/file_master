@@ -117,3 +117,48 @@ export async function runClientSidePdfReorder(
   worker.terminate();
   return new Blob([result], { type: 'application/pdf' });
 }
+
+export async function runClientSidePdfCrop(
+  file: File,
+  cropX: number,
+  cropY: number,
+  cropWidth: number,
+  cropHeight: number,
+  mode: 'all' | 'specific' | 'odd' | 'even',
+  pageList: number[]
+): Promise<Blob> {
+  const worker = createWorker();
+  const api = wrap<any>(worker);
+  const fileData = { name: file.name, buffer: await file.arrayBuffer() };
+  const result: Uint8Array = await api.cropPdfPages(fileData, cropX, cropY, cropWidth, cropHeight, mode, pageList);
+  worker.terminate();
+  return new Blob([result], { type: 'application/pdf' });
+}
+
+export interface PdfAnnotation {
+  page: number;
+  type: 'text' | 'cover' | 'replace';
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  text?: string;
+  fontSize?: number;
+  colorHex?: string;
+  fillColorHex?: string;
+  bold?: boolean;
+  italic?: boolean;
+  opacity?: number;
+}
+
+export async function runClientSidePdfAnnotate(
+  file: File,
+  annotations: PdfAnnotation[]
+): Promise<Blob> {
+  const worker = createWorker();
+  const api = wrap<any>(worker);
+  const fileData = { name: file.name, buffer: await file.arrayBuffer() };
+  const result: Uint8Array = await api.annotatePdf(fileData, annotations);
+  worker.terminate();
+  return new Blob([result], { type: 'application/pdf' });
+}

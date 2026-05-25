@@ -4,7 +4,8 @@ import {
   FileArchive, Sparkles, FileEdit, RefreshCw, Search, Video, FileText,
   FileSpreadsheet, Loader2, Scissors, Image, Music, Globe, FileCode,
   ArrowLeftRight, Maximize2, MonitorSmartphone, ImageIcon, RotateCw,
-  Trash2, Stamp, Hash, AlignJustify, Crop, FlipHorizontal, Type, PenTool
+  Trash2, Stamp, Hash, AlignJustify, Crop, FlipHorizontal, Type, PenTool,
+  Eraser, ScanLine, ScanText
 } from 'lucide-react';
 import { useFileStore, OperationType } from '@/store/useFileStore';
 import { apiClient, apiMock } from '@/lib/api';
@@ -26,6 +27,8 @@ const TOOLS: ToolItem[] = [
   { id: 'merge',    title: 'Merge PDFs',       description: 'Combine multiple PDF files into one document.',              category: 'pdf', icon: FileText,       gradient: 'from-red-500/20 to-rose-500/10 border-red-500/25',  actionName: 'merge' },
   { id: 'compress', title: 'Compress PDF',     description: 'Reduce file size while preserving fonts and structure.',     category: 'pdf', icon: FileArchive,    gradient: 'from-red-500/20 to-rose-500/10 border-red-500/25',  actionName: 'compress' },
   { id: 'split',    title: 'Split PDF',        description: 'Extract individual pages or ranges into separate PDFs.',     category: 'pdf', icon: Scissors,       gradient: 'from-red-500/20 to-rose-500/10 border-red-500/25',  actionName: 'split',           badge: 'Client-side', badgeColor: 'emerald' },
+  { id: 'edit',     title: 'Crop Pages',       description: 'Trim the visible area of PDF pages with a custom crop box.', category: 'pdf', icon: Crop,           gradient: 'from-red-500/20 to-rose-500/10 border-red-500/25',  actionName: 'pdf_crop',        badge: 'Client-side', badgeColor: 'emerald' },
+  { id: 'edit',     title: 'Edit PDF',         description: 'Add text, cover content, or replace text on any page.',      category: 'pdf', icon: ScanText,       gradient: 'from-red-500/20 to-rose-500/10 border-red-500/25',  actionName: 'pdf_annotate',    badge: 'Client-side', badgeColor: 'emerald' },
   { id: 'edit',     title: 'Rotate Pages',     description: 'Rotate all or specific pages by 90°, 180°, or 270°.',       category: 'pdf', icon: RotateCw,       gradient: 'from-red-500/20 to-rose-500/10 border-red-500/25',  actionName: 'pdf_rotate',      badge: 'Client-side', badgeColor: 'emerald' },
   { id: 'edit',     title: 'Delete Pages',     description: 'Remove specific pages from the PDF document.',              category: 'pdf', icon: Trash2,         gradient: 'from-red-500/20 to-rose-500/10 border-red-500/25',  actionName: 'pdf_delete',      badge: 'Client-side', badgeColor: 'emerald' },
   { id: 'edit',     title: 'Add Watermark',    description: 'Stamp text on every page — diagonal, center, or footer.',   category: 'pdf', icon: Stamp,          gradient: 'from-red-500/20 to-rose-500/10 border-red-500/25',  actionName: 'pdf_watermark',   badge: 'Client-side', badgeColor: 'emerald' },
@@ -40,6 +43,7 @@ const TOOLS: ToolItem[] = [
   { id: 'compress', title: 'Compress Image',   description: 'Reduce PNG/JPEG/WEBP size with quality presets.',           category: 'image', icon: FileArchive,      gradient: 'from-blue-500/20 to-cyan-500/10 border-blue-500/25',    actionName: 'compress',        badge: 'Client-side', badgeColor: 'emerald' },
   { id: 'enhance',  title: 'Enhance Image',    description: 'Adjust brightness, contrast, sharpness & denoise.',        category: 'image', icon: Sparkles,         gradient: 'from-blue-500/20 to-cyan-500/10 border-blue-500/25',    actionName: 'enhance' },
   { id: 'resize',   title: 'Resize Image',     description: 'Set exact pixel dimensions or scale by percentage.',        category: 'image', icon: Maximize2,        gradient: 'from-blue-500/20 to-cyan-500/10 border-blue-500/25',    actionName: 'resize',          badge: 'Client-side', badgeColor: 'emerald' },
+  { id: 'edit',     title: 'Remove Background',description: 'AI-powered background removal, outputs transparent PNG.',   category: 'image', icon: Eraser,           gradient: 'from-blue-500/20 to-cyan-500/10 border-blue-500/25',    actionName: 'remove_bg',       badge: 'Client-side', badgeColor: 'emerald' },
   { id: 'edit',     title: 'Crop Image',       description: 'Trim to exact coordinates or common aspect ratios.',        category: 'image', icon: Crop,             gradient: 'from-blue-500/20 to-cyan-500/10 border-blue-500/25',    actionName: 'image_crop',      badge: 'Client-side', badgeColor: 'emerald' },
   { id: 'edit',     title: 'Rotate & Flip',    description: 'Rotate 90°/180°/270° or flip horizontally/vertically.',     category: 'image', icon: FlipHorizontal,   gradient: 'from-blue-500/20 to-cyan-500/10 border-blue-500/25',    actionName: 'image_rotate',    badge: 'Client-side', badgeColor: 'emerald' },
   { id: 'edit',     title: 'Add Watermark',    description: 'Stamp text or logo over any image — tiled or single.',      category: 'image', icon: PenTool,          gradient: 'from-blue-500/20 to-cyan-500/10 border-blue-500/25',    actionName: 'image_watermark', badge: 'Client-side', badgeColor: 'emerald' },
