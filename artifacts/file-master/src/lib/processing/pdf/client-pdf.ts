@@ -168,3 +168,30 @@ export async function runClientSidePdfInsertShapes(file: File, shapes: PdfShape[
   worker.terminate();
   return new Blob([result], { type: 'application/pdf' });
 }
+
+// ── PDF → Images (uses pdfjs-dist, returns a ZIP blob) ─────────────────────
+export async function runClientSidePdfToImages(file: File, dpi = 150): Promise<Blob> {
+  const pdfjsLib = await import('pdfjs-dist');
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  const JSZip = (await import('jszip')).default;
+  const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+  const scale = dpi / 72;
+  const zip = new JSZip();
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const vp = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(vp.width);
+    canvas.height = Math.round(vp.height);
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    const blob = await new Promise<Blob>((res, rej) =>
+      canvas.toBlob(b => b ? res(b) : rej(new Error('Canvas toBlob failed')), 'image/png')
+    );
+    zip.file(`page-${String(i).padStart(3, '0')}.png`, await blob.arrayBuffer());
+  }
+  return zip.generateAsync({ type: 'blob', mimeType: 'application/zip' });
+}

@@ -1,7 +1,44 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { File, X, GripVertical, ArrowUpDown } from 'lucide-react';
 import { useFileStore } from '@/store/useFileStore';
 import { PdfMergeGrid } from './PdfMergeGrid';
+
+// Small component — renders the first page of a PDF as a thumbnail icon
+const PdfThumb: React.FC<{ file: File }> = ({ file }) => {
+  const [thumb, setThumb] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const pdfjsLib = await import('pdfjs-dist');
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+        const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+        const page = await pdf.getPage(1);
+        const vp0 = page.getViewport({ scale: 1 });
+        const scale = 44 / vp0.width;
+        const vp = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(vp.width);
+        canvas.height = Math.round(vp.height);
+        const ctx = canvas.getContext('2d')!;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        await page.render({ canvasContext: ctx, viewport: vp }).promise;
+        if (!cancelled) setThumb(canvas.toDataURL('image/jpeg', 0.8));
+      } catch { /* show fallback */ }
+    })();
+    return () => { cancelled = true; };
+  }, [file]);
+
+  return (
+    <div className="h-11 w-11 rounded-lg overflow-hidden bg-white border border-border shrink-0 flex items-center justify-center">
+      {thumb
+        ? <img src={thumb} alt="" className="h-full w-full object-contain" />
+        : <File className="h-5 w-5 text-red-400" />}
+    </div>
+  );
+};
 
 export const PreviewCanvas: React.FC = () => {
   const { files, removeFile, selectedOperation, rawFiles } = useFileStore();
@@ -44,6 +81,9 @@ export const PreviewCanvas: React.FC = () => {
     if (type.includes('spreadsheetml') || name.endsWith('.xlsx')) return 'XLSX';
     return (type.split('/').pop() || 'FILE').toUpperCase().slice(0, 6);
   };
+
+  const isPdfFile = (type: string, name: string) =>
+    type === 'application/pdf' || name.toLowerCase().endsWith('.pdf');
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
     dragIndexRef.current = index;
@@ -112,6 +152,7 @@ export const PreviewCanvas: React.FC = () => {
             const badgeColor = getFormatBadgeColor(file.type);
             const isDragTarget = dragOverIndex === index && dragIndexRef.current !== index;
             const isBeingDragged = isDragging && dragIndexRef.current === index;
+            const rawFile = rawFiles[index];
 
             return (
               <div
@@ -140,6 +181,8 @@ export const PreviewCanvas: React.FC = () => {
                   <div className="h-11 w-11 rounded-lg overflow-hidden bg-background border border-border shrink-0">
                     <img src={file.previewUrl} alt={file.name} className="h-full w-full object-cover" />
                   </div>
+                ) : isPdfFile(file.type, file.name) && rawFile ? (
+                  <PdfThumb file={rawFile} />
                 ) : (
                   <div className="h-11 w-11 rounded-lg bg-secondary flex items-center justify-center border border-border shrink-0 text-muted-foreground">
                     <File className="h-5 w-5" />

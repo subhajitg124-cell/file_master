@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Download, CheckCircle, Copy, Check, RotateCcw, AlertTriangle, FileText, FileType, Pencil } from 'lucide-react';
+import { Download, CheckCircle, Copy, Check, RotateCcw, AlertTriangle, FileText, FileType, Pencil, Eye } from 'lucide-react';
 import { useFileStore } from '@/store/useFileStore';
+import { PdfResultPreview } from './PdfResultPreview';
 
 const getDefaultFilename = (operation: string, format?: string): string => {
   switch (operation) {
@@ -164,6 +165,26 @@ export const DownloadHub: React.FC = () => {
                 <div className="text-right space-y-0.5">
                   <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider block">Saved</span>
                   <span className="font-bold text-emerald-500">-{savings.percent}%</span>
+                </div>
+              </div>
+            )}
+
+            {/* Result preview — PDF pages */}
+            {downloadUrl && /\.pdf$/i.test(customFilename) && (
+              <div className="border-t border-border pt-4">
+                <PdfResultPreview url={downloadUrl} />
+              </div>
+            )}
+
+            {/* Result preview — image output */}
+            {downloadUrl && /\.(png|jpe?g|webp|gif|bmp|ico|svg)$/i.test(customFilename) && (
+              <div className="border-t border-border pt-4 space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <Eye className="h-3 w-3" />
+                  Preview
+                </div>
+                <div className="rounded-xl overflow-hidden border border-border bg-muted/30 flex items-center justify-center">
+                  <img src={downloadUrl} alt="Output" className="max-h-52 max-w-full object-contain" />
                 </div>
               </div>
             )}

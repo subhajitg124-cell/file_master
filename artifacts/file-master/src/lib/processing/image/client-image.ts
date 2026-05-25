@@ -337,3 +337,60 @@ export async function getImageDimensions(file: File): Promise<{ width: number; h
   const img = await loadImage(file);
   return { width: img.naturalWidth, height: img.naturalHeight };
 }
+
+// ── Enhance image (brightness / contrast / sharpness / denoise) ────────────
+function boxBlurImageData(imageData: ImageData, radius: number): ImageData {
+  const { data, width, height } = imageData;
+  const out = new Uint8ClampedArray(data.length);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let r = 0, g = 0, b = 0, a = 0, n = 0;
+      for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+          const nx = x + dx, ny = y + dy;
+          if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+            const idx = (ny * width + nx) * 4;
+            r += data[idx]; g += data[idx + 1]; b += data[idx + 2]; a += data[idx + 3]; n++;
+          }
+        }
+      }
+      const i = (y * width + x) * 4;
+      out[i] = r / n; out[i + 1] = g / n; out[i + 2] = b / n; out[i + 3] = a / n;
+    }
+  }
+  return new ImageData(out, width, height);
+}
+
+export async function enhanceImage(
+  file: File,
+  options: { brightness?: number; contrast?: number; sharpness?: number; denoise?: boolean }
+): Promise<Blob> {
+  const { brightness = 1.0, contrast = 1.0, sharpness = 1.0, denoise = false } = options;
+  const img = await loadImage(file);
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d')!;
+  ctx.filter = `brightness(${brightness}) contrast(${contrast})`;
+  ctx.drawImage(img, 0, 0);
+  ctx.filter = 'none';
+  if (sharpness > 1.05) {
+    const amount = (sharpness - 1.0) * 0.8;
+    const id = ctx.getImageData(0, 0, w, h);
+    const bl = boxBlurImageData(id, 1);
+    const out = new ImageData(new Uint8ClampedArray(id.data.length), w, h);
+    for (let i = 0; i < id.data.length; i += 4) {
+      for (let c = 0; c < 3; c++) {
+        out.data[i + c] = Math.min(255, Math.max(0, id.data[i + c] * (1 + amount) - bl.data[i + c] * amount));
+      }
+      out.data[i + 3] = id.data[i + 3];
+    }
+    ctx.putImageData(out, 0, 0);
+  }
+  if (denoise) {
+    const id = ctx.getImageData(0, 0, w, h);
+    ctx.putImageData(boxBlurImageData(id, 1), 0, 0);
+  }
+  return canvasToBlob(canvas, outputMime(file), 0.93);
+}

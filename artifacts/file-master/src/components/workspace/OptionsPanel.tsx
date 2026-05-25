@@ -22,9 +22,14 @@ import {
 } from '@/lib/processing/pdf/client-pdf';
 import {
   compressImage, resizeImage, convertToIco, convertSvgToPng, convertImageFormat,
-  getImageDimensions, cropImage, rotateFlipImage, addImageWatermark, removeImageBackground
+  getImageDimensions, cropImage, rotateFlipImage, addImageWatermark, removeImageBackground,
+  enhanceImage,
 } from '@/lib/processing/image/client-image';
 import { runClientSideHtmlToZip, runClientSideInlineHtml } from '@/lib/processing/archive/client-archive';
+import {
+  convertMdToHtml, convertHtmlToMd, convertXlsxToCsv, convertCsvToXlsx, cleanDocx,
+} from '@/lib/processing/office/client-office';
+import { runClientSidePdfToImages } from '@/lib/processing/pdf/client-pdf';
 
 // ── Shared primitives ───────────────────────────────────────────────────────
 
@@ -679,6 +684,69 @@ export const OptionsPanel: React.FC = () => {
         return;
       }
 
+      // ── Image Enhance ──────────────────────────────────────────────────
+      if (actionName === 'enhance' && isImage) {
+        const blob = await enhanceImage(rawFiles[0], {
+          brightness: operationOptions.brightness ?? 1.0,
+          contrast:   operationOptions.contrast   ?? 1.0,
+          sharpness:  operationOptions.sharpness  ?? 1.0,
+          denoise:    operationOptions.denoise     ?? false,
+        });
+        prog(95);
+        setTimeout(() => done(blob, rawFiles[0].size), 200);
+        return;
+      }
+
+      // ── PDF → Images (ZIP) ─────────────────────────────────────────────
+      if (actionName === 'pdf_to_images') {
+        const dpi = operationOptions.dpi ?? 150;
+        prog(20);
+        const blob = await runClientSidePdfToImages(rawFiles[0], dpi);
+        prog(95);
+        setTimeout(() => done(blob, rawFiles[0].size), 200);
+        return;
+      }
+
+      // ── MD → HTML ─────────────────────────────────────────────────────
+      if (actionName === 'md_to_html') {
+        const blob = await convertMdToHtml(rawFiles[0]);
+        prog(95);
+        setTimeout(() => done(blob, rawFiles[0].size), 200);
+        return;
+      }
+
+      // ── HTML → MD ─────────────────────────────────────────────────────
+      if (actionName === 'html_to_md') {
+        const blob = await convertHtmlToMd(rawFiles[0]);
+        prog(95);
+        setTimeout(() => done(blob, rawFiles[0].size), 200);
+        return;
+      }
+
+      // ── XLSX → CSV ────────────────────────────────────────────────────
+      if (actionName === 'xlsx_to_csv') {
+        const blob = await convertXlsxToCsv(rawFiles[0]);
+        prog(95);
+        setTimeout(() => done(blob, rawFiles[0].size), 200);
+        return;
+      }
+
+      // ── CSV → XLSX ────────────────────────────────────────────────────
+      if (actionName === 'csv_to_xlsx') {
+        const blob = await convertCsvToXlsx(rawFiles[0]);
+        prog(95);
+        setTimeout(() => done(blob, rawFiles[0].size), 200);
+        return;
+      }
+
+      // ── DOCX cleanup ──────────────────────────────────────────────────
+      if (actionName === 'docx_cleanup') {
+        const blob = await cleanDocx(rawFiles[0]);
+        prog(95);
+        setTimeout(() => done(blob, rawFiles[0].size), 200);
+        return;
+      }
+
       // ── Backend/mock fallback ──────────────────────────────────────────
       const outputMimeMap: Record<string, string> = {
         pdf_to_docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -687,9 +755,7 @@ export const OptionsPanel: React.FC = () => {
         pdf_to_pdfa: 'application/pdf', pdf_protect: 'application/pdf',
         pdf_ocr: 'application/pdf', pdf_compare: 'application/pdf',
         pdf_summarize: 'text/plain', pdf_translate: 'application/pdf',
-        pdf_to_images: 'image/png', docx_to_pdf: 'application/pdf', pptx_to_pdf: 'application/pdf',
-        xlsx_to_csv: 'text/csv', csv_to_xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        md_to_html: 'text/html', html_to_md: 'text/markdown',
+        docx_to_pdf: 'application/pdf', pptx_to_pdf: 'application/pdf',
         html_to_zip: 'application/zip',
         video_to_audio: 'audio/mpeg', video_to_gif: 'image/gif', compress_audio: 'audio/mpeg',
         enhance: fileType,
