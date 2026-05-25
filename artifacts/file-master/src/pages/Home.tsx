@@ -7,83 +7,116 @@ import { ToolGrid } from '@/components/workspace/ToolGrid';
 import { OptionsPanel } from '@/components/workspace/OptionsPanel';
 import { ProgressTracker } from '@/components/workspace/ProgressTracker';
 import { DownloadHub } from '@/components/workspace/DownloadHub';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sun, Moon, ShieldCheck, Zap, AlertTriangle, FileText, Sparkles,
-  Video, FileSpreadsheet, ArrowLeft, FolderOpen, Cpu, Lock
+  Video, FileSpreadsheet, ArrowLeft, Cpu, Lock, Check,
+  ChevronRight, Upload, Settings, Download, LayoutGrid
 } from 'lucide-react';
 
 const SUITES = [
   {
     id: 'pdf' as const,
     title: 'PDF Suite',
-    subtitle: 'Merge & Compress',
-    description: 'Merge multiple PDFs, compress, split pages, or convert to DOCX, PPTX, and images.',
+    subtitle: 'Documents',
+    description: 'Merge, split, edit, annotate, compress, convert, protect, and OCR any PDF.',
     icon: FileText,
-    toolCount: 7,
+    toolCount: 29,
+    color: 'red',
     accentFrom: 'from-red-500',
-    accentTo: 'to-rose-500',
-    cardBg: 'bg-gradient-to-br from-red-500/8 to-rose-500/4',
-    borderClass: 'border-red-500/15 hover:border-red-500/40',
-    glowClass: 'hover:shadow-glow-red',
-    iconBg: 'bg-gradient-to-br from-red-500/20 to-rose-500/10',
+    accentTo: 'to-rose-600',
+    cardBg: 'bg-gradient-to-br from-red-500/6 to-rose-600/3',
+    border: 'border-red-500/15 hover:border-red-400/40',
+    iconBg: 'bg-red-500/15 border-red-500/20',
     iconColor: 'text-red-400',
-    tools: ['Merge', 'Compress', 'Split', 'PDF→DOCX', 'PDF→PPTX', 'PDF→Images', 'Images→PDF'],
+    badgeBg: 'bg-red-500/10 text-red-400',
+    barColor: 'bg-red-400',
+    tools: [
+      { label: 'Merge PDFs',     sub: 'Merge & Combine' },
+      { label: 'Split Pages',    sub: 'Split & Organize' },
+      { label: 'Edit & Sign',    sub: 'Edit & Annotate' },
+      { label: 'Protect & Lock', sub: 'Security' },
+      { label: 'Convert',        sub: 'Convert' },
+      { label: 'AI Summarize',   sub: 'AI Tools' },
+    ],
   },
   {
     id: 'image' as const,
     title: 'Image Lab',
-    subtitle: 'Enhance & Convert',
-    description: 'Compress, enhance, resize, convert formats, make ICO favicons, or convert SVG to PNG.',
+    subtitle: 'Images',
+    description: 'Compress, enhance, resize, crop, remove backgrounds, and convert images.',
     icon: Sparkles,
-    toolCount: 7,
+    toolCount: 11,
+    color: 'blue',
     accentFrom: 'from-blue-500',
     accentTo: 'to-cyan-500',
-    cardBg: 'bg-gradient-to-br from-blue-500/8 to-cyan-500/4',
-    borderClass: 'border-blue-500/15 hover:border-blue-500/40',
-    glowClass: 'hover:shadow-glow-blue',
-    iconBg: 'bg-gradient-to-br from-blue-500/20 to-cyan-500/10',
+    cardBg: 'bg-gradient-to-br from-blue-500/6 to-cyan-500/3',
+    border: 'border-blue-500/15 hover:border-blue-400/40',
+    iconBg: 'bg-blue-500/15 border-blue-500/20',
     iconColor: 'text-blue-400',
-    tools: ['Compress', 'Enhance', 'Resize', 'Format Convert', 'To ICO', 'SVG→PNG', 'Images→PDF'],
+    badgeBg: 'bg-blue-500/10 text-blue-400',
+    barColor: 'bg-blue-400',
+    tools: [
+      { label: 'Compress',       sub: 'Optimize' },
+      { label: 'Resize & Crop',  sub: 'Resize & Transform' },
+      { label: 'Remove BG',      sub: 'Edit' },
+      { label: 'Format Convert', sub: 'Convert' },
+    ],
   },
   {
     id: 'office' as const,
     title: 'Office Suite',
-    subtitle: 'Merge, Convert & Clean',
-    description: 'Merge DOCX files with drag-to-reorder, convert DOCX/PPTX/XLSX, bi-directional PDF support.',
+    subtitle: 'Documents & Data',
+    description: 'Merge DOCX, convert between Word/PDF/PowerPoint, handle spreadsheets and markup.',
     icon: FileSpreadsheet,
     toolCount: 11,
+    color: 'emerald',
     accentFrom: 'from-emerald-500',
     accentTo: 'to-teal-500',
-    cardBg: 'bg-gradient-to-br from-emerald-500/8 to-teal-500/4',
-    borderClass: 'border-emerald-500/15 hover:border-emerald-500/40',
-    glowClass: 'hover:shadow-glow-green',
-    iconBg: 'bg-gradient-to-br from-emerald-500/20 to-teal-500/10',
+    cardBg: 'bg-gradient-to-br from-emerald-500/6 to-teal-500/3',
+    border: 'border-emerald-500/15 hover:border-emerald-400/40',
+    iconBg: 'bg-emerald-500/15 border-emerald-500/20',
     iconColor: 'text-emerald-400',
-    tools: ['Merge Docs', 'DOCX↔PDF', 'PPTX↔PDF', 'XLSX→CSV', 'CSV→XLSX', 'MD↔HTML', 'Compress', 'Clean'],
+    badgeBg: 'bg-emerald-500/10 text-emerald-400',
+    barColor: 'bg-emerald-400',
+    tools: [
+      { label: 'Merge Docs',     sub: 'Merge' },
+      { label: 'DOCX ↔ PDF',    sub: 'Convert Documents' },
+      { label: 'Spreadsheets',   sub: 'Spreadsheets' },
+      { label: 'Web & Markup',   sub: 'Web & Markup' },
+    ],
   },
   {
     id: 'video' as const,
     title: 'Video Studio',
-    subtitle: 'Trim & Compress',
-    description: 'Trim video clips, compress MP4, extract audio, convert to GIF, or compress audio files.',
+    subtitle: 'Video & Audio',
+    description: 'Trim and compress video, extract audio, convert to GIF, and compress audio files.',
     icon: Video,
     toolCount: 5,
+    color: 'violet',
     accentFrom: 'from-violet-500',
-    accentTo: 'to-purple-500',
-    cardBg: 'bg-gradient-to-br from-violet-500/8 to-purple-500/4',
-    borderClass: 'border-violet-500/15 hover:border-violet-500/40',
-    glowClass: 'hover:shadow-glow-purple',
-    iconBg: 'bg-gradient-to-br from-violet-500/20 to-purple-500/10',
+    accentTo: 'to-purple-600',
+    cardBg: 'bg-gradient-to-br from-violet-500/6 to-purple-600/3',
+    border: 'border-violet-500/15 hover:border-violet-400/40',
+    iconBg: 'bg-violet-500/15 border-violet-500/20',
     iconColor: 'text-violet-400',
-    tools: ['Trim & Cut', 'Compress', 'Extract Audio', 'Video→GIF', 'Compress Audio'],
+    badgeBg: 'bg-violet-500/10 text-violet-400',
+    barColor: 'bg-violet-400',
+    tools: [
+      { label: 'Trim & Cut',     sub: 'Edit Video' },
+      { label: 'Compress Video', sub: 'Edit Video' },
+      { label: 'Extract Audio',  sub: 'Convert & Export' },
+      { label: 'Video → GIF',   sub: 'Convert & Export' },
+    ],
   },
-];
+] as const;
 
-const TRUST_BADGES = [
-  { icon: Lock,       label: 'Zero server storage',    desc: 'Files never leave your device for client-side ops' },
-  { icon: Zap,        label: 'Instant processing',     desc: 'Most operations complete in seconds' },
-  { icon: ShieldCheck,label: 'GDPR compliant',         desc: 'Auto-expiry on all temporary files' },
+type SuiteId = (typeof SUITES)[number]['id'];
+
+const STEPS = [
+  { n: 1, label: 'Upload',    icon: Upload },
+  { n: 2, label: 'Configure', icon: Settings },
+  { n: 3, label: 'Export',    icon: Download },
 ];
 
 export default function Home() {
@@ -108,10 +141,10 @@ export default function Home() {
     const params = new URLSearchParams(window.location.search);
     const sec = params.get('section');
     if (sec && ['pdf', 'image', 'video', 'office'].includes(sec)) {
-      setSelectedSection(sec as any);
+      setSelectedSection(sec as SuiteId);
     } else {
       const last = localStorage.getItem('file-master-last-workspace');
-      if (last && ['pdf', 'image', 'video', 'office'].includes(last)) setSelectedSection(last as any);
+      if (last && ['pdf', 'image', 'video', 'office'].includes(last)) setSelectedSection(last as SuiteId);
     }
   }, [setSelectedSection]);
 
@@ -122,37 +155,49 @@ export default function Home() {
   };
 
   const step = downloadUrl ? 3 : (files.length > 0 && selectedOperation) ? 2 : 1;
-
-  const workspaceMeta: Record<string, { title: string; desc: string }> = {
-    pdf:    { title: 'PDF Suite',               desc: 'Merge, compress, split, and convert PDF documents.' },
-    image:  { title: 'Image Lab',               desc: 'Compress, enhance, resize, and convert images client-side.' },
-    office: { title: 'Office & Text Suite',     desc: 'Convert documents, spreadsheets, presentations, and markup.' },
-    video:  { title: 'Video Processing Studio', desc: 'Trim, compress, and convert video and audio files.' },
-  };
-  const ws = selectedSection ? workspaceMeta[selectedSection] : null;
+  const activeSuite = SUITES.find(s => s.id === selectedSection);
 
   return (
     <div className="flex flex-col min-h-screen bg-background bg-mesh transition-colors duration-300">
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      {/* ── Header ─────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 glass border-b border-border/60">
-        <div className="max-w-6xl mx-auto px-4 py-3.5 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <button
             onClick={() => clearStore()}
-            className="flex items-center gap-2.5 group focus:outline-none"
-            aria-label="Back to home"
+            className="flex items-center gap-2.5 group focus:outline-none shrink-0"
           >
             <div className="h-8 w-8 rounded-xl overflow-hidden border border-border shadow-sm group-hover:scale-105 transition-transform duration-200">
               <img src="/icon.png" alt="File Master" className="h-full w-full object-cover" />
             </div>
-            <div className="leading-tight">
+            <div className="leading-tight hidden sm:block">
               <span className="block text-sm font-extrabold tracking-tight text-foreground">File Master</span>
               <span className="block text-[9px] text-muted-foreground font-medium uppercase tracking-widest">All-in-one platform</span>
             </div>
           </button>
 
-          <div className="flex items-center gap-2.5">
-            {/* Standalone mode toggle */}
+          {/* Workspace tab pills — shown once inside a workspace */}
+          {(selectedSection || files.length > 0) && (
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+              {SUITES.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => { clearStore(); setSelectedSection(s.id); }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-150
+                    ${selectedSection === s.id
+                      ? `${s.iconBg} border ${s.iconColor}`
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/60 border border-transparent'
+                    }`}
+                >
+                  <s.icon className="h-3 w-3 shrink-0" />
+                  <span className="hidden md:inline">{s.title}</span>
+                  <span className="md:hidden">{s.subtitle}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 shrink-0">
             <div className="hidden sm:flex items-center gap-2 bg-card/60 border border-border rounded-xl px-3 py-1.5 text-xs">
               <span className="text-muted-foreground font-medium">Standalone</span>
               <button
@@ -165,8 +210,7 @@ export default function Home() {
             </div>
             <button
               onClick={toggleTheme}
-              className="h-8 w-8 flex items-center justify-center rounded-xl bg-card/60 hover:bg-card border border-border text-muted-foreground hover:text-foreground transition-all duration-200"
-              aria-label="Toggle theme"
+              className="h-8 w-8 flex items-center justify-center rounded-xl bg-card/60 hover:bg-card border border-border text-muted-foreground hover:text-foreground transition-all"
             >
               {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
             </button>
@@ -174,257 +218,276 @@ export default function Home() {
         </div>
       </header>
 
-      {/* ── Banners ─────────────────────────────────────────────────────────── */}
+      {/* ── System banners ─────────────────────────────────────────────── */}
       {!isMockMode && !backendHealthy && (
-        <div className="bg-amber-500/10 border-b border-amber-500/20 py-2.5 px-4 text-center text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center justify-center gap-2">
+        <div className="bg-amber-500/10 border-b border-amber-500/20 py-2 px-4 text-center text-xs font-semibold text-amber-500 flex items-center justify-center gap-2">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-          FastAPI backend is offline — running in Standalone Simulator mode.
+          FastAPI backend offline — running in Standalone Simulator mode.
         </div>
       )}
       {!isMockMode && backendHealthy && (!backendCapabilities.ffmpeg || !backendCapabilities.libreoffice) && (
-        <div className="bg-violet-500/10 border-b border-violet-500/20 py-2 px-4 text-center text-xs text-violet-500 dark:text-violet-400 flex items-center justify-center gap-2 font-medium">
+        <div className="bg-violet-500/10 border-b border-violet-500/20 py-2 px-4 text-center text-xs text-violet-400 flex items-center justify-center gap-2 font-medium">
           <Cpu className="h-3.5 w-3.5 shrink-0" />
           {!backendCapabilities.libreoffice && 'LibreOffice unavailable. '}
           {!backendCapabilities.ffmpeg && 'FFmpeg unavailable.'}
         </div>
       )}
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8 space-y-10">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
+        <AnimatePresence mode="wait">
 
-        {/* ── Wizard step indicator (when files loaded) ── */}
-        {files.length > 0 && (
-          <div className="w-full max-w-sm mx-auto flex items-center justify-between relative px-2">
-            <div className="absolute top-1/2 left-0 right-0 h-px bg-border -translate-y-1/2 -z-10" />
-            <motion.div
-              className="absolute top-1/2 left-0 h-px bg-primary -translate-y-1/2 -z-10 transition-all duration-500"
-              style={{ width: step === 1 ? '0%' : step === 2 ? '50%' : '100%' }}
-            />
-            {[{l:'Upload',n:1},{l:'Configure',n:2},{l:'Export',n:3}].map(({l,n}) => (
-              <div key={n} className="flex flex-col items-center bg-background px-3 gap-1.5">
-                <span className={`h-7 w-7 rounded-full border-2 flex items-center justify-center font-bold text-xs transition-all duration-300 ${step >= n ? 'border-primary bg-primary text-primary-foreground shadow-glow' : 'border-border bg-card text-muted-foreground'}`}>
-                  {n}
-                </span>
-                <span className={`text-[10px] uppercase font-bold tracking-wider transition-colors ${step >= n ? 'text-primary' : 'text-muted-foreground'}`}>{l}</span>
+          {/* ─── DASHBOARD ────────────────────────────────────────────────── */}
+          {files.length === 0 && selectedSection === null && (
+            <motion.div key="dashboard"
+              initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="space-y-10"
+            >
+              {/* Hero */}
+              <div className="text-center space-y-4 max-w-2xl mx-auto pt-2">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold border bg-card/80 border-border text-muted-foreground">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  56+ tools · Client-side processing · Zero storage
+                </div>
+                <h1 className="text-4xl sm:text-5xl font-black leading-tight tracking-tight">
+                  <span className="gradient-text">Process Any File,</span>
+                  <br />
+                  <span className="text-foreground">Instantly & Securely</span>
+                </h1>
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
+                  PDF, Image, Office, and Video tools — all in one place. Most operations run entirely in your browser.
+                </p>
+                <div className="flex items-center justify-center gap-5 flex-wrap text-xs text-muted-foreground pt-1">
+                  {[
+                    { icon: Lock,        label: 'Zero server storage' },
+                    { icon: Zap,         label: 'Instant processing' },
+                    { icon: ShieldCheck, label: 'GDPR compliant' },
+                  ].map(({ icon: Icon, label }) => (
+                    <div key={label} className="flex items-center gap-1.5">
+                      <Icon className="h-3.5 w-3.5 text-primary" />
+                      <span className="font-medium">{label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        )}
 
-        {/* ── DASHBOARD ───────────────────────────────────────────────────── */}
-        {files.length === 0 && selectedSection === null && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-            className="space-y-12"
-          >
-            {/* Hero */}
-            <div className="text-center space-y-5 max-w-2xl mx-auto pt-4">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1, duration: 0.4 }}
-                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold border bg-card/80 border-border text-muted-foreground"
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                29+ tools · Client-side processing · Zero storage
-              </motion.div>
-
-              <h2 className="text-4xl sm:text-5xl font-black leading-tight tracking-tight text-balance">
-                <span className="gradient-text">Secure, Instant</span>
-                <br />
-                <span className="text-foreground">File Processing</span>
-              </h2>
-              <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
-                All work happens client-side or in sandboxed environments.
-                Drop any file to auto-detect its type, or pick a workspace below.
-              </p>
-
-              {/* Trust badges */}
-              <div className="flex items-center justify-center gap-4 flex-wrap pt-1">
-                {TRUST_BADGES.map(({ icon: Icon, label }) => (
-                  <div key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Icon className="h-3.5 w-3.5 text-primary" />
-                    <span className="font-medium">{label}</span>
-                  </div>
-                ))}
+              {/* Universal upload */}
+              <div className="max-w-2xl mx-auto space-y-2.5">
+                <p className="text-center text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Drop any file to start</p>
+                <UploadZone allowedCategory={null} />
               </div>
-            </div>
 
-            {/* Universal drop zone */}
-            <div className="max-w-2xl mx-auto space-y-3">
-              <div className="text-center">
-                <span className="text-[10px] uppercase font-extrabold text-primary tracking-widest bg-primary/10 border border-primary/20 px-3 py-1 rounded-full">
-                  Universal Dropzone
-                </span>
-              </div>
-              <UploadZone allowedCategory={null} />
-            </div>
-
-            {/* Workspace cards */}
-            <div className="space-y-4">
-              <div className="text-center">
-                <p className="text-xs uppercase font-extrabold text-muted-foreground tracking-widest">Or select a specialized workspace</p>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 stagger-children">
-                {SUITES.map((suite) => (
-                  <motion.div
-                    key={suite.id}
-                    whileHover={{ y: -3 }}
-                    whileTap={{ scale: 0.99 }}
-                    onClick={() => setSelectedSection(suite.id)}
-                    className={`group relative cursor-pointer rounded-2xl border p-5 transition-all duration-300 overflow-hidden ${suite.cardBg} ${suite.borderClass} ${suite.glowClass}`}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedSection(suite.id); }}
-                    aria-label={`Enter ${suite.title}`}
-                  >
-                    {/* Animated gradient hover overlay */}
-                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${suite.accentFrom}/5 via-transparent ${suite.accentTo}/5`} />
-
-                    <div className="relative space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div className={`p-3 rounded-2xl ${suite.iconBg} border border-white/5 group-hover:scale-110 transition-transform duration-300`}>
+              {/* Workspace cards */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+                  <h2 className="text-xs uppercase font-bold text-muted-foreground tracking-widest">Choose a workspace</h2>
+                  <div className="flex-1 h-px bg-border/50" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {SUITES.map((suite, idx) => (
+                    <motion.button
+                      key={suite.id}
+                      initial={{ opacity: 0, y: 14 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.07, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                      whileHover={{ y: -2 }}
+                      whileTap={{ scale: 0.99 }}
+                      onClick={() => setSelectedSection(suite.id)}
+                      className={`group relative text-left rounded-2xl border p-5 transition-all duration-250 overflow-hidden ${suite.cardBg} ${suite.border} hover:shadow-premium focus:outline-none focus:ring-2 focus:ring-primary/40`}
+                    >
+                      {/* Top row */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className={`h-12 w-12 rounded-xl ${suite.iconBg} border flex items-center justify-center group-hover:scale-105 transition-transform duration-200`}>
                           <suite.icon className={`h-6 w-6 ${suite.iconColor}`} />
                         </div>
                         <div className="text-right">
-                          <span className={`text-xs font-bold ${suite.iconColor} bg-current/10 rounded-full px-2 py-0.5 opacity-70`}
-                            style={{ background: 'currentColor', opacity: 0.15 }}>
-                          </span>
-                          <span className={`block text-[10px] font-extrabold uppercase tracking-widest ${suite.iconColor} opacity-70`}>{suite.subtitle}</span>
-                          <span className={`block text-lg font-black ${suite.iconColor}`}>{suite.toolCount}</span>
-                          <span className="block text-[9px] text-muted-foreground font-medium -mt-0.5">tools</span>
+                          <span className={`text-2xl font-black ${suite.iconColor}`}>{suite.toolCount}</span>
+                          <span className="block text-[10px] text-muted-foreground font-semibold -mt-0.5">tools</span>
                         </div>
                       </div>
 
-                      <div>
-                        <h3 className="text-base font-black text-foreground mb-1">{suite.title}</h3>
+                      {/* Title & description */}
+                      <div className="mb-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-base font-black text-foreground">{suite.title}</h3>
+                          <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${suite.badgeBg}`}>{suite.subtitle}</span>
+                        </div>
                         <p className="text-xs text-muted-foreground leading-relaxed">{suite.description}</p>
                       </div>
 
-                      {/* Tool pills */}
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {suite.tools.slice(0, 4).map((t) => (
-                          <span key={t} className={`text-[9px] font-semibold px-2 py-0.5 rounded-full ${suite.iconBg} ${suite.iconColor} border border-current/10`}>
-                            {t}
-                          </span>
+                      {/* Tool list */}
+                      <div className="space-y-1.5 mb-4">
+                        {suite.tools.map((t) => (
+                          <div key={t.label} className="flex items-center gap-2">
+                            <div className={`h-1.5 w-1.5 rounded-full ${suite.barColor} shrink-0 opacity-70`} />
+                            <span className="text-[11px] text-muted-foreground font-medium">{t.label}</span>
+                            <span className="text-[10px] text-muted-foreground/50">· {t.sub}</span>
+                          </div>
                         ))}
-                        {suite.tools.length > 4 && (
-                          <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
-                            +{suite.tools.length - 4} more
-                          </span>
-                        )}
                       </div>
 
-                      <div className={`flex items-center justify-between text-xs font-bold border-t border-border/50 pt-3 ${suite.iconColor}`}>
-                        <span className="opacity-60 text-muted-foreground">Enter workspace</span>
-                        <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
+                      {/* CTA row */}
+                      <div className={`flex items-center justify-between text-xs font-semibold border-t border-border/40 pt-3 ${suite.iconColor}`}>
+                        <span className="text-muted-foreground font-medium text-[11px]">Open workspace</span>
+                        <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
                       </div>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ─── WORKSPACE (no files yet) ─────────────────────────────────── */}
+          {files.length === 0 && selectedSection !== null && activeSuite && (
+            <motion.div key={`ws-${selectedSection}`}
+              initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="space-y-7"
+            >
+              {/* Workspace header */}
+              <div className={`rounded-2xl border p-5 ${activeSuite.cardBg} ${activeSuite.border}`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className={`h-12 w-12 rounded-xl ${activeSuite.iconBg} border flex items-center justify-center shrink-0`}>
+                      <activeSuite.icon className={`h-6 w-6 ${activeSuite.iconColor}`} />
                     </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* ── WORKSPACE TOOL SELECT (no files yet) ──────────────────────── */}
-        {files.length === 0 && selectedSection !== null && ws && (
-          <motion.div
-            initial={{ opacity: 0, x: 12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="space-y-8"
-          >
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6 max-w-4xl mx-auto">
-              <div className="space-y-1">
-                <button
-                  onClick={() => setSelectedSection(null)}
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-bold uppercase tracking-wider transition-colors mb-2"
-                >
-                  <ArrowLeft className="h-3 w-3" /> Back to Dashboard
-                </button>
-                <h2 className="text-2xl font-black text-foreground">{ws.title}</h2>
-                <p className="text-xs text-muted-foreground">{ws.desc}</p>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <FolderOpen className="h-4 w-4 text-primary shrink-0" />
-                <span>Choose an operation or drop files below</span>
-              </div>
-            </div>
-            <UploadZone allowedCategory={selectedSection} />
-            <div className="max-w-4xl mx-auto space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs uppercase font-extrabold text-primary tracking-widest">Available Tools</h3>
-                <span className="text-[10px] text-muted-foreground italic">Click a tool to upload and process directly</span>
-              </div>
-              <ToolGrid />
-            </div>
-          </motion.div>
-        )}
-
-        {/* ── WIZARD STEPS (files loaded) ───────────────────────────────── */}
-        {files.length > 0 && (
-          <div className="space-y-6">
-
-            {/* Step 1: uploaded, pick tool */}
-            {step === 1 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-                <div className="flex items-center justify-between border-b border-border pb-4 max-w-4xl mx-auto">
-                  <button onClick={() => clearStore()} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-bold uppercase tracking-wider transition-colors">
-                    <ArrowLeft className="h-3 w-3" /> Reset Workspace
-                  </button>
-                  <span className="text-xs font-bold bg-primary/10 border border-primary/20 text-primary px-3 py-1 rounded-full uppercase tracking-wider">
-                    {files.length} {files.length === 1 ? 'file' : 'files'} ready
-                  </span>
-                </div>
-                <PreviewCanvas />
-                <div className="max-w-4xl mx-auto space-y-4">
-                  <div className="text-center">
-                    <p className="text-xs uppercase font-extrabold text-primary tracking-widest">Select an Operation</p>
-                  </div>
-                  <ToolGrid />
-                </div>
-              </motion.div>
-            )}
-
-            {/* Step 2: configure + process */}
-            {step === 2 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                {isProcessing ? (
-                  <ProgressTracker />
-                ) : (
-                  <div className="space-y-8">
-                    <div className="flex items-center justify-between border-b border-border pb-4 max-w-4xl mx-auto">
+                    <div>
                       <button
-                        onClick={() => useFileStore.setState({ selectedOperation: null })}
-                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-bold uppercase tracking-wider transition-colors"
+                        onClick={() => setSelectedSection(null)}
+                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground font-bold uppercase tracking-wider transition-colors mb-0.5"
                       >
-                        <ArrowLeft className="h-3 w-3" /> Change Operation
+                        <ArrowLeft className="h-2.5 w-2.5" /> Dashboard
                       </button>
-                      <span className="text-xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 px-3 py-1 rounded-full uppercase tracking-wider">
-                        Ready to process
-                      </span>
+                      <h2 className="text-xl font-black text-foreground">{activeSuite.title}</h2>
+                      <p className="text-xs text-muted-foreground mt-0.5">{activeSuite.description}</p>
                     </div>
-                    <PreviewCanvas />
-                    <OptionsPanel />
                   </div>
-                )}
-              </motion.div>
-            )}
+                  <div className={`text-right shrink-0`}>
+                    <span className={`text-3xl font-black ${activeSuite.iconColor}`}>{activeSuite.toolCount}</span>
+                    <span className="block text-[10px] text-muted-foreground font-semibold">tools available</span>
+                  </div>
+                </div>
+              </div>
 
-            {/* Step 3: download */}
-            {step === 3 && (
-              <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}>
-                <DownloadHub />
-              </motion.div>
-            )}
-          </div>
-        )}
+              {/* Upload zone */}
+              <div className="space-y-2">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Upload a file to get started</p>
+                <UploadZone allowedCategory={selectedSection} />
+              </div>
+
+              {/* Tool grid with section header */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className={`h-6 w-6 rounded-lg ${activeSuite.iconBg} border flex items-center justify-center`}>
+                    <activeSuite.icon className={`h-3 w-3 ${activeSuite.iconColor}`} />
+                  </div>
+                  <h3 className="text-sm font-bold text-foreground">All Tools</h3>
+                  <span className="text-xs text-muted-foreground bg-muted/60 border border-border px-2 py-0.5 rounded-full font-medium">{activeSuite.toolCount} available</span>
+                  <div className="flex-1 h-px bg-border/50" />
+                  <span className="text-[10px] text-muted-foreground italic hidden sm:block">Click any tool to upload & run instantly</span>
+                </div>
+                <ToolGrid />
+              </div>
+            </motion.div>
+          )}
+
+          {/* ─── WIZARD (files loaded) ─────────────────────────────────────── */}
+          {files.length > 0 && (
+            <motion.div key="wizard"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="space-y-7"
+            >
+              {/* Step indicator */}
+              <div className="flex items-center justify-center">
+                <div className="flex items-center gap-0">
+                  {STEPS.map(({ n, label, icon: StepIcon }, i) => {
+                    const active = step === n;
+                    const done = step > n;
+                    return (
+                      <React.Fragment key={n}>
+                        <div className="flex flex-col items-center gap-1.5">
+                          <div className={`h-9 w-9 rounded-xl border-2 flex items-center justify-center transition-all duration-300 ${
+                            done  ? 'border-primary bg-primary text-primary-foreground shadow-glow' :
+                            active ? 'border-primary bg-primary/10 text-primary' :
+                            'border-border bg-card text-muted-foreground'
+                          }`}>
+                            {done ? <Check className="h-4 w-4" /> : <StepIcon className="h-4 w-4" />}
+                          </div>
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${active || done ? 'text-primary' : 'text-muted-foreground'}`}>{label}</span>
+                        </div>
+                        {i < STEPS.length - 1 && (
+                          <div className={`h-0.5 w-16 sm:w-24 mx-1 mb-5 rounded-full transition-all duration-500 ${step > n ? 'bg-primary' : 'bg-border'}`} />
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Step 1: pick a tool */}
+              {step === 1 && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                  <div className="flex items-center justify-between border-b border-border pb-4">
+                    <button onClick={() => clearStore()} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-bold uppercase tracking-wider transition-colors">
+                      <ArrowLeft className="h-3 w-3" /> Reset
+                    </button>
+                    <span className="text-xs font-bold bg-primary/10 border border-primary/20 text-primary px-3 py-1 rounded-full uppercase tracking-wider">
+                      {files.length} {files.length === 1 ? 'file' : 'files'} ready
+                    </span>
+                  </div>
+                  <PreviewCanvas />
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-sm font-bold text-foreground">Select an Operation</h3>
+                      <div className="flex-1 h-px bg-border/50" />
+                      <span className="text-[10px] text-muted-foreground italic">Suggested tools are highlighted</span>
+                    </div>
+                    <ToolGrid />
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 2: configure */}
+              {step === 2 && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                  {isProcessing ? (
+                    <ProgressTracker />
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between border-b border-border pb-4">
+                        <button
+                          onClick={() => useFileStore.setState({ selectedOperation: null })}
+                          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-bold uppercase tracking-wider transition-colors"
+                        >
+                          <ArrowLeft className="h-3 w-3" /> Change Operation
+                        </button>
+                        <span className="text-xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full uppercase tracking-wider">
+                          Ready to process
+                        </span>
+                      </div>
+                      <PreviewCanvas />
+                      <OptionsPanel />
+                    </>
+                  )}
+                </motion.div>
+              )}
+
+              {/* Step 3: download */}
+              {step === 3 && (
+                <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}>
+                  <DownloadHub />
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+
+        </AnimatePresence>
       </main>
 
-      {/* ── Footer ─────────────────────────────────────────────────────────── */}
-      <footer className="border-t border-border bg-card/20 py-5 mt-12">
+      {/* ── Footer ─────────────────────────────────────────────────────── */}
+      <footer className="border-t border-border bg-card/20 py-5 mt-10">
         <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between text-xs text-muted-foreground gap-3">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
