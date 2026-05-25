@@ -1,45 +1,36 @@
-# File Master
+# [Project name]
 
-All-in-one secure file manipulation platform for PDFs, images, office documents, and video.
+_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/file-master run dev` — run the frontend dev server (port 21533)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
+- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- Frontend: React + Vite, Tailwind CSS v4, Framer Motion, Zustand
-- File processing: pdf-lib (client-side PDF merge/compress), react-dropzone, comlink (Web Workers)
-- Backend (optional): FastAPI at `VITE_BACKEND_URL` — app works standalone without it
+- API: Express 5
+- DB: PostgreSQL + Drizzle ORM
+- Validation: Zod (`zod/v4`), `drizzle-zod`
+- API codegen: Orval (from OpenAPI spec)
+- Build: esbuild (CJS bundle)
 
 ## Where things live
 
-- `artifacts/file-master/` — React + Vite frontend (previewPath `/`)
-- `artifacts/file-master/src/store/useFileStore.ts` — Zustand store (all app state)
-- `artifacts/file-master/src/lib/api.ts` — API client + mock fallback
-- `artifacts/file-master/src/lib/file-detection.ts` — magic-byte file type detection
-- `artifacts/file-master/src/lib/processing/pdf/` — client-side PDF Web Worker
-- `artifacts/file-master/src/components/workspace/` — all workspace UI components
-- `artifacts/file-master/src/pages/Home.tsx` — main page / routing logic
-- `.migration-backup/` — original Next.js source (reference only)
+_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
 
 ## Architecture decisions
 
-- Standalone mock mode activates automatically when FastAPI backend is unreachable — no user action required
-- PDF merge/compress runs entirely client-side via Web Workers (pdf-lib + comlink) to avoid backend dependency
-- Magic-byte file header inspection determines file type before upload, driving smart workspace routing
-- `NEXT_PUBLIC_BACKEND_URL` → `VITE_BACKEND_URL` env var migration; all `next/image` → `<img>` tags
-- Dark mode applied via `.dark` class on `<html>` element; toggled in-app without next-themes
+_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
 
 ## Product
 
-- **PDF Suite**: Merge multiple PDFs or compress to smaller size
-- **Image Lab**: Compress, enhance (brightness/contrast/sharpness/denoise), and convert format
-- **Office Suite**: Convert DOCX/PPTX to PDF, XLSX to CSV, Markdown to HTML, clean Word layouts
-- **Video Studio**: Trim MP4 clips with timeline markers, compress with H264 CRF tuning
+_Describe the high-level user-facing capabilities of this app once they exist._
 
 ## User preferences
 
@@ -47,9 +38,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-- The Vite dev server must bind to `0.0.0.0` and respect `PORT` env var (already configured in `vite.config.ts`)
-- `comlink` Web Workers require Vite's built-in worker support — no extra config needed for Vite v7
-- Backend health check runs on mount and every 30s; if unhealthy, `isMockMode` is set to `true` automatically
+_Populate as you build — sharp edges, "always run X before Y" rules._
 
 ## Pointers
 
