@@ -379,7 +379,7 @@ export const OptionsPanel: React.FC = () => {
   const {
     files, rawFiles, selectedOperation, operationOptions, updateOptions,
     isMockMode, jobId, setProcessing, setProgress, setDownloadUrl, setSavings,
-    setError, isProcessing,
+    setError, isProcessing, addRawFiles, addFiles,
   } = useFileStore();
 
   const [showAdvanced, setShowAdvanced] = useState(false);

@@ -42,7 +42,7 @@ export const PdfResultPreview: React.FC<Props> = ({ url, maxPages = 8 }) => {
           const ctx = canvas.getContext('2d')!;
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          await page.render({ canvasContext: ctx, viewport: vp }).promise;
+          await page.render({ canvasContext: ctx, viewport: vp, canvas }).promise;
           rendered.push(canvas.toDataURL('image/jpeg', 0.82));
           if (!cancelRef.current) setPages([...rendered]);
         }

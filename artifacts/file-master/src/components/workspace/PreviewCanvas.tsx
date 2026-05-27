@@ -24,7 +24,7 @@ const PdfThumb: React.FC<{ file: File }> = ({ file }) => {
         const ctx = canvas.getContext('2d')!;
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        await page.render({ canvasContext: ctx, viewport: vp }).promise;
+        await page.render({ canvasContext: ctx, viewport: vp, canvas }).promise;
         if (!cancelled) setThumb(canvas.toDataURL('image/jpeg', 0.8));
       } catch { /* show fallback */ }
     })();
