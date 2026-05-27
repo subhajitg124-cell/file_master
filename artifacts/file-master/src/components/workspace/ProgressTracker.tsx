@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { m as motion } from 'framer-motion';
 import { HardDriveUpload, Settings, Cpu, FileCheck, Loader2 } from 'lucide-react';
 import { useFileStore } from '@/store/useFileStore';
 

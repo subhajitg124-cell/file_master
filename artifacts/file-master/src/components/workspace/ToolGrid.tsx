@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m as motion, AnimatePresence } from 'framer-motion';
 import {
   FileArchive, Sparkles, FileEdit, RefreshCw, Search, Video, FileText,
   FileSpreadsheet, Loader2, Scissors, Image, Music, Globe, FileCode,

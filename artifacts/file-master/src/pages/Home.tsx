@@ -7,7 +7,7 @@ import { ToolGrid } from '@/components/workspace/ToolGrid';
 import { OptionsPanel } from '@/components/workspace/OptionsPanel';
 import { ProgressTracker } from '@/components/workspace/ProgressTracker';
 import { DownloadHub } from '@/components/workspace/DownloadHub';
-import { motion } from 'framer-motion';
+import { m as motion } from 'framer-motion';
 import {
   Sun, Moon, ShieldCheck, Zap, AlertTriangle, FileText, Sparkles,
   Video, FileSpreadsheet, ArrowLeft, FolderOpen, Cpu, Lock

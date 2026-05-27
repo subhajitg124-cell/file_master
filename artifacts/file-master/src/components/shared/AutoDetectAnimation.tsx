@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m as motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, Search, ArrowRight, X } from 'lucide-react';
 
 interface AutoDetectAnimationProps {

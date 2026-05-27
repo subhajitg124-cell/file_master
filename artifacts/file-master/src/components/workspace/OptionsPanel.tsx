@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { m as motion } from 'framer-motion';
 import {
   Sliders, RefreshCw, Play, Loader2, Sparkles, FileText,
   Scissors, Music, FileArchive, Image, ImageIcon, ArrowLeftRight, FileCode, Maximize2,
