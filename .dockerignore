@@ -1,0 +1,14 @@
+.git
+.migration-backup
+node_modules
+**/node_modules
+**/dist
+**/.next
+**/.cache
+**/__pycache__
+*.pyc
+npm-debug.log
+yarn-error.log
+.local
+.cache
+coverage
