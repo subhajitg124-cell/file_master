@@ -7,6 +7,7 @@ import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import { logger } from "../lib/logger";
 import { execSync } from "child_process";
+import premiumRouter from "./premium";
 
 const router = Router();
 
@@ -357,5 +358,8 @@ const expiredCleanupTimer = setInterval(() => {
   }
 }, 15 * 60 * 1000); // run every 15 minutes
 expiredCleanupTimer.unref();
+
+// Mount premium features routes
+router.use("/premium", premiumRouter);
 
 export default router;
