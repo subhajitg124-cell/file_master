@@ -1,159 +1,92 @@
-import React, { useEffect, useState } from 'react';
-import { useFileStore } from '@/store/useFileStore';
-import { apiClient } from '@/lib/api';
-import { UploadZone } from '@/components/workspace/UploadZone';
-import { PreviewCanvas } from '@/components/workspace/PreviewCanvas';
-import { ToolGrid } from '@/components/workspace/ToolGrid';
-import { OptionsPanel } from '@/components/workspace/OptionsPanel';
-import { ProgressTracker } from '@/components/workspace/ProgressTracker';
-import { DownloadHub } from '@/components/workspace/DownloadHub';
-import { LiveImageEditor } from '@/components/workspace/LiveImageEditor';
-import { LiveVideoEditor } from '@/components/workspace/LiveVideoEditor';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "wouter";
+import { motion } from "framer-motion";
 import {
-  Sun, Moon, ShieldCheck, Zap, AlertTriangle, FileText, Sparkles,
-  Video, FileSpreadsheet, ArrowLeft, Cpu, Lock, Check,
-  ChevronRight, Upload, Settings, Download, LayoutGrid, Keyboard,
-  WandSparkles, Rocket, MousePointerClick
-} from 'lucide-react';
+  AlertTriangle,
+  ArrowRight,
+  Bot,
+  CheckCircle2,
+  ChevronRight,
+  Download,
+  FileArchive,
+  FileCheck2,
+  FolderTree,
+  Gauge,
+  Globe2,
+  Languages,
+  LayoutDashboard,
+  Lock,
+  Moon,
+  Play,
+  ShieldCheck,
+  Sparkles,
+  Sun,
+  Upload,
+  WandSparkles,
+  WifiOff,
+  Zap,
+} from "lucide-react";
+import { useFileStore } from "@/store/useFileStore";
+import { apiClient } from "@/lib/api";
+import { DownloadHub } from "@/components/workspace/DownloadHub";
+import { OptionsPanel } from "@/components/workspace/OptionsPanel";
+import { PreviewCanvas } from "@/components/workspace/PreviewCanvas";
+import { ProgressTracker } from "@/components/workspace/ProgressTracker";
+import { ToolGrid } from "@/components/workspace/ToolGrid";
+import { UploadZone } from "@/components/workspace/UploadZone";
+import {
+  AppLanguage,
+  automationPillars,
+  eventRules,
+  getRuleCompletion,
+  quickActions,
+  translations,
+} from "@/lib/document-automation";
 
-const SUITES = [
-  {
-    id: 'pdf' as const,
-    title: 'PDF Suite',
-    subtitle: 'Documents',
-    description: 'Merge, split, edit, annotate, compress, convert, protect, and OCR any PDF.',
-    icon: FileText,
-    toolCount: 29,
-    color: 'red',
-    accentFrom: 'from-red-500',
-    accentTo: 'to-rose-600',
-    cardBg: 'bg-gradient-to-br from-red-500/6 to-rose-600/3',
-    border: 'border-red-500/15 hover:border-red-400/40',
-    iconBg: 'bg-red-500/15 border-red-500/20',
-    iconColor: 'text-red-400',
-    shortcut: 'Alt+1',
-    hotkey: 'P',
-    glow: 'shadow-glow-red',
-    badgeBg: 'bg-red-500/10 text-red-400',
-    barColor: 'bg-red-400',
-    tools: [
-      { label: 'Merge PDFs',     sub: 'Merge & Combine' },
-      { label: 'Split Pages',    sub: 'Split & Organize' },
-      { label: 'Edit & Sign',    sub: 'Edit & Annotate' },
-      { label: 'Protect & Lock', sub: 'Security' },
-      { label: 'Convert',        sub: 'Convert' },
-      { label: 'AI Summarize',   sub: 'AI Tools' },
-    ],
-  },
-  {
-    id: 'image' as const,
-    title: 'Image Lab',
-    subtitle: 'Images',
-    description: 'Compress, enhance, resize, crop, remove backgrounds, and convert images.',
-    icon: Sparkles,
-    toolCount: 11,
-    color: 'blue',
-    accentFrom: 'from-blue-500',
-    accentTo: 'to-cyan-500',
-    cardBg: 'bg-gradient-to-br from-blue-500/6 to-cyan-500/3',
-    border: 'border-blue-500/15 hover:border-blue-400/40',
-    iconBg: 'bg-blue-500/15 border-blue-500/20',
-    iconColor: 'text-blue-400',
-    shortcut: 'Alt+2',
-    hotkey: 'I',
-    glow: 'shadow-glow-blue',
-    badgeBg: 'bg-blue-500/10 text-blue-400',
-    barColor: 'bg-blue-400',
-    tools: [
-      { label: 'Compress',       sub: 'Optimize' },
-      { label: 'Resize & Crop',  sub: 'Resize & Transform' },
-      { label: 'Remove BG',      sub: 'Edit' },
-      { label: 'Format Convert', sub: 'Convert' },
-    ],
-  },
-  {
-    id: 'office' as const,
-    title: 'Office Suite',
-    subtitle: 'Documents & Data',
-    description: 'Merge DOCX, convert between Word/PDF/PowerPoint, handle spreadsheets and markup.',
-    icon: FileSpreadsheet,
-    toolCount: 11,
-    color: 'emerald',
-    accentFrom: 'from-emerald-500',
-    accentTo: 'to-teal-500',
-    cardBg: 'bg-gradient-to-br from-emerald-500/6 to-teal-500/3',
-    border: 'border-emerald-500/15 hover:border-emerald-400/40',
-    iconBg: 'bg-emerald-500/15 border-emerald-500/20',
-    iconColor: 'text-emerald-400',
-    shortcut: 'Alt+3',
-    hotkey: 'O',
-    glow: 'shadow-glow-green',
-    badgeBg: 'bg-emerald-500/10 text-emerald-400',
-    barColor: 'bg-emerald-400',
-    tools: [
-      { label: 'Merge Docs',     sub: 'Merge' },
-      { label: 'DOCX ↔ PDF',    sub: 'Convert Documents' },
-      { label: 'Spreadsheets',   sub: 'Spreadsheets' },
-      { label: 'Web & Markup',   sub: 'Web & Markup' },
-    ],
-  },
-  {
-    id: 'video' as const,
-    title: 'Video Studio',
-    subtitle: 'Video & Audio',
-    description: 'Trim and compress video, extract audio, convert to GIF, and compress audio files.',
-    icon: Video,
-    toolCount: 5,
-    color: 'violet',
-    accentFrom: 'from-violet-500',
-    accentTo: 'to-purple-600',
-    cardBg: 'bg-gradient-to-br from-violet-500/6 to-purple-600/3',
-    border: 'border-violet-500/15 hover:border-violet-400/40',
-    iconBg: 'bg-violet-500/15 border-violet-500/20',
-    iconColor: 'text-violet-400',
-    shortcut: 'Alt+4',
-    hotkey: 'V',
-    glow: 'shadow-glow-purple',
-    badgeBg: 'bg-violet-500/10 text-violet-400',
-    barColor: 'bg-violet-400',
-    tools: [
-      { label: 'Trim & Cut',     sub: 'Edit Video' },
-      { label: 'Compress Video', sub: 'Edit Video' },
-      { label: 'Extract Audio',  sub: 'Convert & Export' },
-      { label: 'Video → GIF',   sub: 'Convert & Export' },
-    ],
-  },
-] as const;
-
-type SuiteId = (typeof SUITES)[number]['id'];
-
-const STEPS = [
-  { n: 1, label: 'Upload',    icon: Upload },
-  { n: 2, label: 'Configure', icon: Settings },
-  { n: 3, label: 'Export',    icon: Download },
-];
-
-const QUOTES = [
-  { text: 'Use one dashboard for PDF, image, office and video workflows — without clutter.', author: 'File Master' },
-  { text: 'Your files stay private by default. Process locally and share only what you choose.', author: 'Privacy First' },
-  { text: 'Drop a file, select a tool, and complete the task in seconds. No extra features in the way.', author: 'Productivity Tip' },
-];
-
-const HERO_ACTIONS = [
-  { label: 'Pick a suite', icon: MousePointerClick, color: 'text-sky-400', bg: 'bg-sky-500/10 border-sky-500/20' },
-  { label: 'Drop files', icon: Upload, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
-  { label: 'Tune options', icon: WandSparkles, color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10 border-fuchsia-500/20' },
-  { label: 'Export fast', icon: Rocket, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
-];
+const languageLabels: Record<AppLanguage, string> = {
+  en: "English",
+  bn: "বাংলা",
+  hi: "हिन्दी",
+};
 
 export default function Home() {
   const {
-    files, selectedOperation, isProcessing, downloadUrl, isMockMode, toggleMockMode,
-    backendHealthy, backendCapabilities, setBackendStatus, selectedSection, setSelectedSection, clearStore
+    files,
+    selectedOperation,
+    isProcessing,
+    downloadUrl,
+    backendHealthy,
+    backendCapabilities,
+    setBackendStatus,
+    selectedSection,
+    setSelectedSection,
+    setOperation,
+    updateOptions,
+    clearStore,
   } = useFileStore();
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-  const [quoteIndex, setQuoteIndex] = useState(0);
+
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [language, setLanguage] = useState<AppLanguage>(() => {
+    const stored = typeof window !== "undefined" ? localStorage.getItem("filemaster-language") : null;
+    return stored === "bn" || stored === "hi" ? stored : "en";
+  });
+  const [selectedRuleId, setSelectedRuleId] = useState(eventRules[0].id);
+
+  const selectedRule = useMemo(
+    () => eventRules.find((rule) => rule.id === selectedRuleId) || eventRules[0],
+    [selectedRuleId],
+  );
+  const t = translations[language];
+  const completion = getRuleCompletion(selectedRule, files.length);
+  const step = downloadUrl ? 3 : files.length > 0 && selectedOperation ? 2 : files.length > 0 ? 1 : 0;
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem("filemaster-language", language);
+  }, [language]);
 
   useEffect(() => {
     const fetchHealth = async () => {
@@ -162,516 +95,355 @@ export default function Home() {
       if (!res.healthy) useFileStore.setState({ isMockMode: true });
     };
     fetchHealth();
-    const interval = setInterval(fetchHealth, 30000);
-    return () => clearInterval(interval);
+    const interval = window.setInterval(fetchHealth, 30000);
+    return () => window.clearInterval(interval);
   }, [setBackendStatus]);
 
-  useEffect(() => {
-    const quoteTimer = setInterval(() => {
-      setQuoteIndex((prev) => (prev + 1) % QUOTES.length);
-    }, 6000);
-    return () => clearInterval(quoteTimer);
-  }, []);
-
-  useEffect(() => {
-    const handleShortcut = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      const isTyping = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable;
-      if (isTyping) return;
-
-      const key = event.key.toLowerCase();
-      const suiteByNumber = event.altKey ? SUITES[Number(event.key) - 1] : undefined;
-      const suiteByLetter = SUITES.find((suite) => suite.hotkey.toLowerCase() === key);
-      const nextSuite = suiteByNumber || suiteByLetter;
-
-      if (nextSuite) {
-        event.preventDefault();
-        clearStore();
-        setSelectedSection(nextSuite.id);
-      }
-    };
-
-    window.addEventListener('keydown', handleShortcut);
-    return () => window.removeEventListener('keydown', handleShortcut);
-  }, [clearStore, setSelectedSection]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const sec = params.get('section');
-    if (sec && ['pdf', 'image', 'video', 'office'].includes(sec)) {
-      setSelectedSection(sec as SuiteId);
-    } else {
-      const last = localStorage.getItem('file-master-last-workspace');
-      if (last && ['pdf', 'image', 'video', 'office'].includes(last)) setSelectedSection(last as SuiteId);
-    }
-  }, [setSelectedSection]);
-
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.classList.toggle('dark', next === 'dark');
+  const startFixMode = () => {
+    clearStore();
+    setSelectedSection(null);
   };
 
-  const step = downloadUrl ? 3 : (files.length > 0 && selectedOperation) ? 2 : 1;
-  const activeSuite = SUITES.find(s => s.id === selectedSection);
-  const firstRawFile = useFileStore((state) => state.rawFiles[0]);
-  const actionName = useFileStore((state) => state.operationOptions.operation);
-  const isLiveImageWorkflow = Boolean(
-    firstRawFile?.type.startsWith('image/') &&
-    selectedOperation &&
-    actionName !== 'images_to_pdf' &&
-    actionName !== 'svg_to_png' &&
-    actionName !== 'to_ico'
-  );
-  const isLiveVideoWorkflow = Boolean(
-    firstRawFile?.type.startsWith('video/') &&
-    (actionName === 'trim' || selectedOperation === 'compress')
-  );
+  const openQuickAction = (category: string, action: string) => {
+    clearStore();
+    setSelectedSection(category as "pdf" | "image" | "office" | "video");
+    if (action === "compress") setOperation("compress");
+    if (action === "enhance") setOperation("enhance");
+    if (action === "ocr") {
+      setOperation("edit");
+      updateOptions({ operation: "pdf_ocr" });
+    }
+  };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background bg-mesh transition-colors duration-300">
-
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 glass border-b border-border/60">
-        <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-3">
-          <button
-            onClick={() => clearStore()}
-            className="flex items-center gap-2.5 group focus:outline-none shrink-0"
-          >
-            <div className="h-8 w-8 rounded-xl overflow-hidden border border-border shadow-sm group-hover:scale-105 transition-transform duration-200">
-              <img src="/icon.png" alt="File Master" className="h-full w-full object-cover" />
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-50 border-b border-border bg-background/82 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <button onClick={startFixMode} className="flex items-center gap-3 text-left">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-glow">
+              <WandSparkles className="h-5 w-5" />
             </div>
-            <div className="leading-tight hidden sm:block">
-              <span className="block text-sm font-extrabold tracking-tight text-foreground">File Master</span>
-              <span className="block text-[9px] text-muted-foreground font-medium uppercase tracking-widest">All-in-one platform</span>
+            <div>
+              <p className="text-base font-black leading-none">FileMaster AI</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Indian document automation</p>
             </div>
           </button>
 
-          {/* Workspace shortcuts */}
-          <div className="order-3 sm:order-none w-full sm:w-auto flex items-center gap-1 overflow-x-auto no-scrollbar rounded-xl bg-card/35 border border-border/50 p-1 sm:bg-transparent sm:border-0 sm:p-0">
-              {SUITES.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => { clearStore(); setSelectedSection(s.id); }}
-                  title={`${s.title} shortcut: ${s.shortcut} or ${s.hotkey}`}
-                  className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-2 sm:px-3 py-2 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-all duration-150
-                    ${selectedSection === s.id
-                      ? `${s.iconBg} border ${s.iconColor} ${s.glow}`
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/60 border border-transparent'
-                    }`}
-                >
-                  <s.icon className="h-3 w-3 shrink-0" />
-                  <span className="hidden md:inline">{s.title}</span>
-                  <span className="md:hidden">{s.subtitle}</span>
-                  <kbd className="hidden xl:inline-flex rounded bg-background/70 border border-border px-1.5 py-0.5 text-[9px] text-muted-foreground">{s.hotkey}</kbd>
-                </button>
-              ))}
+          <div className="order-3 flex w-full items-center gap-2 overflow-x-auto rounded-xl border border-border bg-card/60 p-1 sm:order-none sm:w-auto">
+            {(["en", "bn", "hi"] as AppLanguage[]).map((code) => (
+              <button
+                key={code}
+                onClick={() => setLanguage(code)}
+                className={`rounded-lg px-3 py-2 text-xs font-bold transition ${language === code ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+              >
+                {languageLabels[code]}
+              </button>
+            ))}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-2 bg-card/60 border border-border rounded-xl px-2 sm:px-3 py-1.5 text-xs">
-              <span className="hidden sm:inline text-muted-foreground font-medium">Standalone</span>
-              <button
-                onClick={toggleMockMode}
-                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${isMockMode ? 'bg-primary' : 'bg-secondary'}`}
-                role="switch" aria-checked={isMockMode}
-              >
-                <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ${isMockMode ? 'translate-x-4' : 'translate-x-0'}`} />
-              </button>
-            </div>
+          <div className="flex items-center gap-2">
+            <Link href="/admin" className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-bold text-muted-foreground hover:text-foreground">
+              <LayoutDashboard className="h-4 w-4" />
+              {t.admin}
+            </Link>
             <button
-              onClick={toggleTheme}
-              className="h-8 w-8 flex items-center justify-center rounded-xl bg-card/60 hover:bg-card border border-border text-muted-foreground hover:text-foreground transition-all"
+              onClick={() => setTheme((value) => (value === "dark" ? "light" : "dark"))}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground"
+              aria-label="Toggle theme"
             >
-              {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
           </div>
         </div>
       </header>
 
-      {/* ── System banners ─────────────────────────────────────────────── */}
-      {!isMockMode && !backendHealthy && (
-        <div className="bg-amber-500/10 border-b border-amber-500/20 py-2 px-4 text-center text-xs font-semibold text-amber-500 flex items-center justify-center gap-2">
-          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-          Standalone Mode: File processing runs locally in your browser. Server-side features are offline.
+      {!backendHealthy && (
+        <div className="border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-center text-xs font-bold text-amber-500">
+          <WifiOff className="mr-2 inline h-4 w-4" />
+          Standalone mode is active. Local browser tools still work; server queue features are offline.
         </div>
       )}
-      {!isMockMode && backendHealthy && (!backendCapabilities.ffmpeg || !backendCapabilities.libreoffice) && (
-        <div className="bg-violet-500/10 border-b border-violet-500/20 py-2 px-4 text-center text-xs text-violet-400 flex items-center justify-center gap-2 font-medium">
-          <Cpu className="h-3.5 w-3.5 shrink-0" />
-          Note: Some advanced video/office conversions are running in local simulation mode.
+      {backendHealthy && (!backendCapabilities.ffmpeg || !backendCapabilities.libreoffice) && (
+        <div className="border-b border-sky-500/20 bg-sky-500/10 px-4 py-2 text-center text-xs font-bold text-sky-500">
+          Some video and office conversions may run in fallback mode until FFmpeg/LibreOffice are enabled.
         </div>
       )}
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 py-5 sm:py-8">
-        <AnimatePresence mode="wait">
-
-          {/* ─── DASHBOARD ────────────────────────────────────────────────── */}
-          {files.length === 0 && selectedSection === null && (
-            <motion.div key="dashboard"
-              initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              className="relative overflow-hidden space-y-7 sm:space-y-10 animated-lines-bg"
-            >
-              {/* Hero */}
-              <div className="relative text-center space-y-4 sm:space-y-5 max-w-4xl mx-auto pt-2 sm:pt-4">
-                <div className="hero-sparkle-field" aria-hidden="true" />
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold border bg-card/80 border-border text-muted-foreground hover:scale-105 transition-transform duration-200 shadow-glow-sm">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                  4 focused workflows · Privacy-first · Easy drag & drop
-                </div>
-                <h1 className="text-3xl sm:text-6xl font-black leading-tight tracking-tight font-outfit">
-                  <span className="rainbow-text font-heading">
-                    Master Your Files.
-                  </span>
-                  <br />
-                  <span className="text-foreground">Separate tools, one simple dashboard.</span>
-                </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
-                  Convert, compress, edit, and protect documents with an uncluttered workspace. Start by selecting a category or dropping files instantly.
-                </p>
-                <div className="flex items-center justify-center gap-5 flex-wrap text-xs text-muted-foreground pt-1">
-                  {[
-                    { icon: Lock,        label: 'Private by design' },
-                    { icon: Zap,         label: 'Fast local processing' },
-                    { icon: ShieldCheck, label: 'Minimal UI, no distraction' },
-                  ].map(({ icon: Icon, label }) => (
-                    <div key={label} className="flex items-center gap-1.5 hover:text-foreground transition-colors duration-150">
-                      <Icon className="h-3.5 w-3.5 text-primary" />
-                      <span className="font-medium">{label}</span>
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
+        {files.length === 0 && (
+          <div className="space-y-8">
+            <section className="grid items-stretch gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+              <motion.div
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="overflow-hidden rounded-2xl border border-border bg-card shadow-premium"
+              >
+                <div className="grid min-h-[520px] gap-0 lg:grid-cols-[1fr_360px]">
+                  <div className="flex flex-col justify-between p-5 sm:p-8">
+                    <div className="space-y-5">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-500">
+                        <ShieldCheck className="h-4 w-4" />
+                        Built for scholarships, CSC centers, cyber cafes and mobile users
+                      </div>
+                      <div className="space-y-4">
+                        <h1 className="max-w-3xl text-4xl font-black leading-tight sm:text-6xl">
+                          {t.fixMode}
+                          <span className="block gradient-text">for Indian forms.</span>
+                        </h1>
+                        <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
+                          {t.assistantCopy} The rule engine checks file type, size, dimensions, naming, folder order and missing documents before final export.
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={startFixMode} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-primary-foreground shadow-glow">
+                          <Sparkles className="h-4 w-4" />
+                          Start one-click mode
+                        </button>
+                        <button onClick={() => setSelectedSection("pdf")} className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-black">
+                          <FileArchive className="h-4 w-4 text-red-400" />
+                          Open tools
+                        </button>
+                      </div>
                     </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 sm:gap-2.5 sm:pt-2">
-                  {HERO_ACTIONS.map(({ label, icon: Icon, color, bg }, index) => (
-                    <motion.div
-                      key={label}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.12 + index * 0.06, duration: 0.28 }}
-                      className={`rounded-xl sm:rounded-2xl border ${bg} p-2.5 sm:p-3 text-left animate-float-sm`}
-                      style={{ animationDelay: `${index * 0.35}s` }}
-                    >
-                      <Icon className={`h-4 w-4 ${color}`} />
-                      <p className="mt-2 text-xs font-bold text-foreground">{label}</p>
-                    </motion.div>
-                  ))}
-                </div>
 
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5">
-                  {SUITES.map((suite, index) => (
-                    <motion.button
-                      key={suite.id}
-                      initial={{ opacity: 0, scale: 0.94 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.2 + index * 0.05, duration: 0.25 }}
-                      whileHover={{ y: -4 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => setSelectedSection(suite.id)}
-                      className={`group rounded-xl sm:rounded-2xl border p-2.5 sm:p-3 text-left transition-all duration-200 card-shine ${suite.cardBg} ${suite.border} ${suite.glow}`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className={`h-9 w-9 rounded-xl ${suite.iconBg} border flex items-center justify-center`}>
-                          <suite.icon className={`h-4 w-4 ${suite.iconColor}`} />
+                    <div className="mt-8 grid gap-2 sm:grid-cols-4">
+                      {automationPillars.map(({ label, value, icon: Icon }) => (
+                        <div key={label} className="rounded-xl border border-border bg-background/70 p-3">
+                          <Icon className="h-4 w-4 text-primary" />
+                          <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+                          <p className="text-sm font-black">{value}</p>
                         </div>
-                        <kbd className="rounded-full bg-card/80 border border-border px-2 py-1 text-[10px] font-bold text-muted-foreground">
-                          <span className="sm:hidden">{suite.hotkey}</span>
-                          <span className="hidden sm:inline">{suite.shortcut}</span>
-                        </kbd>
-                      </div>
-                      <p className="mt-3 text-sm font-black text-foreground">{suite.title}</p>
-                      <p className="text-[11px] text-muted-foreground">{suite.toolCount} tools ready</p>
-                    </motion.button>
-                  ))}
-                </div>
-                <div className="rounded-2xl sm:rounded-3xl border border-border bg-card/80 p-4 sm:p-5 text-left shadow-sm animated-lines-bg">
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
-                    <div>
-                      <p className="uppercase text-[10px] tracking-[0.3em] text-muted-foreground font-semibold">Quick tip</p>
-                      <p className="mt-3 text-base text-foreground font-semibold leading-7">{QUOTES[quoteIndex].text}</p>
+                      ))}
                     </div>
-                    <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-primary">{QUOTES[quoteIndex].author}</span>
                   </div>
-                  <div className="flex items-center gap-2 mt-4">
-                    {QUOTES.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setQuoteIndex(index)}
-                        className={`h-2.5 w-2.5 rounded-full transition-all duration-150 ${quoteIndex === index ? 'bg-primary' : 'bg-muted-foreground/40 hover:bg-muted-foreground'}`}
-                        aria-label={`Show quote ${index + 1}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
 
-              {/* Universal upload */}
-              <div className="max-w-2xl mx-auto space-y-2.5">
-                <p className="text-center text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Tap to choose or drop a file</p>
-                <UploadZone allowedCategory={null} />
-              </div>
-
-              {/* Workspace cards */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-                  <h2 className="text-xs uppercase font-bold text-muted-foreground tracking-widest">Choose a workspace</h2>
-                  <div className="flex-1 h-px bg-border/50" />
-                  <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                    <Keyboard className="h-3.5 w-3.5" />
-                    <span>P, I, O, V work anywhere</span>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  {SUITES.map((suite, idx) => (
-                    <motion.button
-                      key={suite.id}
-                      initial={{ opacity: 0, y: 14 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.07, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                      whileHover={{ y: -3, transition: { type: 'spring', stiffness: 400, damping: 25 } }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setSelectedSection(suite.id)}
-                      className={`group relative text-left rounded-2xl border p-5 transition-all duration-250 overflow-hidden card-shine gradient-border animated-lines-bg ${suite.cardBg} ${suite.border} hover:shadow-premium focus:outline-none focus:ring-2 focus:ring-primary/40`}
-                    >
-                      {/* Top row */}
-                      <div className="flex items-start justify-between mb-4">
-                        <div className={`h-12 w-12 rounded-xl ${suite.iconBg} border flex items-center justify-center group-hover:scale-105 transition-transform duration-200`}>
-                          <suite.icon className={`h-6 w-6 ${suite.iconColor}`} />
+                  <div className="border-t border-border bg-muted/30 p-4 lg:border-l lg:border-t-0">
+                    <div className="rounded-xl border border-border bg-card p-4">
+                      <div className="mb-4 flex items-center justify-between">
+                        <div>
+                          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">{t.assistantTitle}</p>
+                          <h2 className="text-lg font-black">{selectedRule.title}</h2>
                         </div>
-                        <div className="text-right">
-                          <span className={`text-2xl font-black ${suite.iconColor}`}>{suite.toolCount}</span>
-                          <span className="block text-[10px] text-muted-foreground font-semibold -mt-0.5">tools</span>
-                        </div>
+                        <Bot className="h-7 w-7 text-primary" />
                       </div>
-
-                      {/* Title & description */}
-                      <div className="mb-4">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-base font-black text-foreground">{suite.title}</h3>
-                          <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${suite.badgeBg}`}>{suite.subtitle}</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">{suite.description}</p>
-                      </div>
-
-                      {/* Tool list */}
-                      <div className="space-y-1.5 mb-4">
-                        {suite.tools.map((t) => (
-                          <div key={t.label} className="flex items-center gap-2">
-                            <div className={`h-1.5 w-1.5 rounded-full ${suite.barColor} shrink-0 opacity-70`} />
-                            <span className="text-[11px] text-muted-foreground font-medium">{t.label}</span>
-                            <span className="text-[10px] text-muted-foreground/50">· {t.sub}</span>
+                      <div className="space-y-3">
+                        {selectedRule.documents.slice(0, 5).map((doc, index) => (
+                          <div key={doc.id} className="flex items-start gap-3 rounded-lg border border-border bg-background/70 p-3">
+                            <div className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black ${index < files.length ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground"}`}>
+                              {index < files.length ? <CheckCircle2 className="h-4 w-4" /> : index + 1}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold">{doc.label}</p>
+                              <p className="text-xs text-muted-foreground">{doc.target}</p>
+                            </div>
                           </div>
                         ))}
                       </div>
-
-                      {/* CTA row */}
-                      <div className={`flex items-center justify-between text-xs font-semibold border-t border-border/40 pt-3 ${suite.iconColor}`}>
-                        <span className="text-muted-foreground font-medium text-[11px]">Open workspace</span>
-                        <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
+                      <div className="mt-4 rounded-xl bg-background p-3">
+                        <div className="mb-2 flex items-center justify-between text-xs font-bold">
+                          <span>Readiness score</span>
+                          <span>{completion}%</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-muted">
+                          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${completion}%` }} />
+                        </div>
                       </div>
-                    </motion.button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="space-y-4">
+                <div className="rounded-2xl border border-border bg-card p-4 shadow-premium">
+                  <div className="mb-3 flex items-center gap-2">
+                    <Upload className="h-4 w-4 text-primary" />
+                    <h2 className="font-black">{t.upload}</h2>
+                  </div>
+                  <UploadZone allowedCategory={selectedSection} />
+                </div>
+                <div className="rounded-2xl border border-border bg-card p-4">
+                  <h2 className="mb-3 font-black">AI recommendations</h2>
+                  {[
+                    "Auto-crop whitespace from scanned certificates",
+                    "Compress PDFs to portal limits without losing readability",
+                    "Rename files using government-friendly templates",
+                    "Create folders and final ZIP in required order",
+                  ].map((item) => (
+                    <div key={item} className="mb-2 flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-sm">
+                      <Zap className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+                      <span>{item}</span>
+                    </div>
                   ))}
                 </div>
-              </div>
-            </motion.div>
-          )}
+              </motion.div>
+            </section>
 
-          {/* ─── WORKSPACE (no files yet) ─────────────────────────────────── */}
-          {files.length === 0 && selectedSection !== null && activeSuite && (
-            <motion.div key={`ws-${selectedSection}`}
-              initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="space-y-7"
-            >
-              {/* Workspace header */}
-              <div className={`rounded-2xl border p-4 sm:p-5 ${activeSuite.cardBg} ${activeSuite.border}`}>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-start sm:items-center gap-3 sm:gap-4">
-                    <div className={`h-12 w-12 rounded-xl ${activeSuite.iconBg} border flex items-center justify-center shrink-0`}>
-                      <activeSuite.icon className={`h-6 w-6 ${activeSuite.iconColor}`} />
-                    </div>
-                    <div>
-                      <button
-                        onClick={() => setSelectedSection(null)}
-                        className="group inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-3 py-2 text-sm font-semibold text-foreground hover:bg-card transition-all duration-200 shadow-sm"
-                      >
-                        <ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform duration-200" /> Back to Dashboard
-                      </button>
-                      <h2 className="text-lg sm:text-xl font-black text-foreground">{activeSuite.title}</h2>
-                      <p className="text-xs text-muted-foreground mt-0.5">{activeSuite.description}</p>
-                    </div>
+            <section className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
+              <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Most used services</p>
+                    <h2 className="text-xl font-black">Government and student workflows</h2>
                   </div>
-                  <div className={`text-left sm:text-right shrink-0`}>
-                    <span className={`text-3xl font-black ${activeSuite.iconColor}`}>{activeSuite.toolCount}</span>
-                    <span className="block text-[10px] text-muted-foreground font-semibold">tools available</span>
-                  </div>
+                  <Globe2 className="h-5 w-5 text-primary" />
                 </div>
-              </div>
-
-              {/* Upload zone */}
-              <div className="space-y-2">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Upload a file to get started</p>
-                <UploadZone allowedCategory={selectedSection} />
-              </div>
-
-              {/* Tool grid with section header */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className={`h-6 w-6 rounded-lg ${activeSuite.iconBg} border flex items-center justify-center`}>
-                    <activeSuite.icon className={`h-3 w-3 ${activeSuite.iconColor}`} />
-                  </div>
-                  <h3 className="text-sm font-bold text-foreground">All Tools</h3>
-                  <span className="text-xs text-muted-foreground bg-muted/60 border border-border px-2 py-0.5 rounded-full font-medium">{activeSuite.toolCount} available</span>
-                  <div className="flex-1 h-px bg-border/50" />
-                  <span className="text-[10px] text-muted-foreground italic hidden sm:block">Click any tool to upload & run instantly</span>
-                </div>
-                <ToolGrid />
-              </div>
-            </motion.div>
-          )}
-
-          {/* ─── WIZARD (files loaded) ─────────────────────────────────────── */}
-          {files.length > 0 && (
-            <motion.div key="wizard"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="space-y-7"
-            >
-              {/* Step indicator */}
-              <div className="flex items-center justify-center overflow-x-auto no-scrollbar pb-1">
-                <div className="flex items-center gap-0">
-                  {STEPS.map(({ n, label, icon: StepIcon }, i) => {
-                    const active = step === n;
-                    const done = step > n;
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {eventRules.map((rule) => {
+                    const Icon = rule.icon;
+                    const active = selectedRule.id === rule.id;
                     return (
-                      <React.Fragment key={n}>
-                        <div className="flex flex-col items-center gap-1.5">
-                          <div className={`h-9 w-9 rounded-xl border-2 flex items-center justify-center transition-all duration-300 ${
-                            done  ? 'border-primary bg-primary text-primary-foreground shadow-glow' :
-                            active ? 'border-primary bg-primary/10 text-primary' :
-                            'border-border bg-card text-muted-foreground'
-                          }`}>
-                            {done ? <Check className="h-4 w-4" /> : <StepIcon className="h-4 w-4" />}
+                      <button
+                        key={rule.id}
+                        onClick={() => setSelectedRuleId(rule.id)}
+                        className={`group rounded-xl border p-4 text-left transition ${active ? "border-primary bg-primary/8 shadow-glow-sm" : "border-border bg-background/70 hover:border-primary/30"}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card">
+                            <Icon className="h-5 w-5 text-primary" />
                           </div>
-                          <span className={`text-[10px] font-bold uppercase tracking-wider ${active || done ? 'text-primary' : 'text-muted-foreground'}`}>{label}</span>
+                          <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[11px] font-bold text-emerald-500">{rule.popularity}% used</span>
                         </div>
-                        {i < STEPS.length - 1 && (
-                          <div className={`h-0.5 w-10 sm:w-24 mx-1 mb-5 rounded-full transition-all duration-500 ${step > n ? 'bg-primary' : 'bg-border'}`} />
-                        )}
-                      </React.Fragment>
+                        <h3 className="mt-4 font-black">{rule.title}</h3>
+                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{rule.description}</p>
+                        <div className="mt-3 flex items-center justify-between text-xs font-bold text-primary">
+                          <span>{rule.documents.length} document rules</span>
+                          <ChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                        </div>
+                      </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Step 1: pick a tool */}
-              {step === 1 && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                  <div className="flex items-center justify-between border-b border-border pb-4">
-                    <button
-                      onClick={() => clearStore()}
-                      className="group inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-3 py-2 text-sm font-semibold text-foreground hover:bg-card transition-all duration-200 shadow-sm"
-                    >
-                      <ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform duration-200" /> Reset Workspace
-                    </button>
-                    <span className="text-xs font-bold bg-primary/10 border border-primary/20 text-primary px-3 py-1 rounded-full uppercase tracking-wider">
-                      {files.length} {files.length === 1 ? 'file' : 'files'} ready
-                    </span>
-                  </div>
-                  <PreviewCanvas />
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-sm font-bold text-foreground">Select an Operation</h3>
-                      <div className="flex-1 h-px bg-border/50" />
-                      <span className="text-[10px] text-muted-foreground italic">Suggested tools are highlighted</span>
+              <div className="space-y-5">
+                <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Instant quick actions</p>
+                      <h2 className="text-xl font-black">One-tap tools for common portal limits</h2>
                     </div>
+                    <Gauge className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {quickActions.map(({ label, icon: Icon, category, action }) => (
+                      <button
+                        key={label}
+                        onClick={() => openQuickAction(category, action)}
+                        className="group flex items-center justify-between rounded-xl border border-border bg-background/70 p-3 text-left transition hover:border-primary/30 hover:bg-muted/50"
+                      >
+                        <span className="flex items-center gap-3 text-sm font-bold">
+                          <Icon className="h-5 w-5 text-primary" />
+                          {label}
+                        </span>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {[
+                    ["PWA mobile", "Offline basics + low-network uploads", Languages],
+                    ["Secure queue", "Rate limit, scan hooks, encryption", Lock],
+                    ["Download center", "History, resumed uploads, batch ZIP", Download],
+                  ].map(([title, copy, Icon]) => (
+                    <div key={title as string} className="rounded-xl border border-border bg-card p-4">
+                      {React.createElement(Icon as typeof Download, { className: "h-5 w-5 text-primary" })}
+                      <p className="mt-4 text-sm font-black">{title as string}</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">{copy as string}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Advanced file tools</p>
+                  <h2 className="text-xl font-black">Compress, convert, OCR, resize and clean scans</h2>
+                </div>
+                <button onClick={() => setSelectedSection(null)} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-bold">
+                  <Play className="h-4 w-4" />
+                  Show all
+                </button>
+              </div>
+              <ToolGrid />
+            </section>
+          </div>
+        )}
+
+        {files.length > 0 && (
+          <section className="space-y-5">
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <button onClick={clearStore} className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground hover:text-foreground">
+                    Reset workflow
+                  </button>
+                  <h1 className="text-2xl font-black">Submission workspace</h1>
+                  <p className="text-sm text-muted-foreground">Files are checked against {selectedRule.title} rules, then compressed, renamed and packed.</p>
+                </div>
+                <div className="min-w-[220px] rounded-xl bg-background p-3">
+                  <div className="mb-2 flex items-center justify-between text-xs font-bold">
+                    <span>Completion</span>
+                    <span>{completion}%</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-primary" style={{ width: `${completion}%` }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+              <aside className="space-y-3 rounded-2xl border border-border bg-card p-4">
+                <div className="flex items-center gap-2">
+                  <FolderTree className="h-4 w-4 text-primary" />
+                  <h2 className="font-black">Required checklist</h2>
+                </div>
+                {selectedRule.documents.map((doc, index) => (
+                  <div key={doc.id} className="rounded-xl border border-border bg-background/70 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-bold">{doc.label}</p>
+                      {index < files.length ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <AlertTriangle className="h-4 w-4 text-amber-400" />}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{doc.target}</p>
+                    <p className="mt-2 font-mono text-[11px] text-primary">{doc.outputName}</p>
+                  </div>
+                ))}
+              </aside>
+
+              <div className="space-y-5">
+                <div className="flex items-center justify-center overflow-x-auto rounded-2xl border border-border bg-card p-3">
+                  {[
+                    ["Upload", Upload],
+                    ["Configure", WandSparkles],
+                    ["Download", FileCheck2],
+                  ].map(([label, Icon], index) => (
+                    <React.Fragment key={label as string}>
+                      <div className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black ${step >= index + 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                        {React.createElement(Icon as typeof Upload, { className: "h-4 w-4" })}
+                        {label as string}
+                      </div>
+                      {index < 2 && <div className="mx-2 h-px w-10 bg-border" />}
+                    </React.Fragment>
+                  ))}
+                </div>
+
+                {step === 1 && (
+                  <div className="space-y-5">
+                    <PreviewCanvas />
                     <ToolGrid />
                   </div>
-                </motion.div>
-              )}
-
-              {/* Step 2: configure */}
-              {step === 2 && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                  {isProcessing ? (
-                    <ProgressTracker />
-                  ) : isLiveImageWorkflow ? (
-                    <>
-                      <div className="flex items-center justify-between border-b border-border pb-4">
-                        <button
-                          onClick={() => useFileStore.setState({ selectedOperation: null })}
-                          className="group flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground font-semibold uppercase tracking-wider transition-colors cursor-pointer"
-                        >
-                          <ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform duration-200" /> Change Operation
-                        </button>
-                        <span className="text-xs font-bold bg-blue-500/10 border border-blue-500/20 text-blue-400 px-3 py-1 rounded-full uppercase tracking-wider">
-                          Live editing
-                        </span>
-                      </div>
-                      <LiveImageEditor />
-                    </>
-                  ) : isLiveVideoWorkflow ? (
-                    <>
-                      <div className="flex items-center justify-between border-b border-border pb-4">
-                        <button
-                          onClick={() => useFileStore.setState({ selectedOperation: null })}
-                          className="group flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground font-semibold uppercase tracking-wider transition-colors cursor-pointer"
-                        >
-                          <ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform duration-200" /> Change Operation
-                        </button>
-                        <span className="text-xs font-bold bg-violet-500/10 border border-violet-500/20 text-violet-400 px-3 py-1 rounded-full uppercase tracking-wider">
-                          Video editor
-                        </span>
-                      </div>
-                      <LiveVideoEditor />
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-between border-b border-border pb-4">
-                        <button
-                          onClick={() => useFileStore.setState({ selectedOperation: null })}
-                          className="group flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground font-semibold uppercase tracking-wider transition-colors cursor-pointer"
-                        >
-                          <ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform duration-200" /> Change Operation
-                        </button>
-                        <span className="text-xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full uppercase tracking-wider">
-                          Ready to process
-                        </span>
-                      </div>
-                      <PreviewCanvas />
-                      <OptionsPanel />
-                    </>
-                  )}
-                </motion.div>
-              )}
-
-              {/* Step 3: download */}
-              {step === 3 && (
-                <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}>
-                  <DownloadHub />
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-
-
-        </AnimatePresence>
+                )}
+                {step === 2 && (isProcessing ? <ProgressTracker /> : <><PreviewCanvas /><OptionsPanel /></>)}
+                {step === 3 && <DownloadHub />}
+              </div>
+            </div>
+          </section>
+        )}
       </main>
-
-      {/* ── Footer ─────────────────────────────────────────────────────── */}
-      <footer className="border-t border-border bg-card/20 py-5 mt-10">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between text-xs text-muted-foreground gap-3">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-            <span>GDPR-Compliant · Zero persistent storage · Files auto-expire in 30 min</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span>WCAG 2.1 AA</span>
-            <span>·</span>
-            <span>v2.0.0</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

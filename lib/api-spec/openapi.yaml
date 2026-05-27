@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: events
+    description: Government scheme and service rule operations
+  - name: jobs
+    description: Upload and document processing operations
+  - name: admin
+    description: Admin analytics and controls
 paths:
   /healthz:
     get:
@@ -24,7 +30,195 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /v1/events:
+    get:
+      operationId: listEventRules
+      tags: [events]
+      summary: List published event rules
+      responses:
+        "200":
+          description: Event rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EventRule"
+    post:
+      operationId: createEventRule
+      tags: [events]
+      summary: Create an event rule
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventRuleInput"
+      responses:
+        "201":
+          description: Created event rule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventRule"
+  /v1/events/{eventId}:
+    patch:
+      operationId: updateEventRule
+      tags: [events]
+      summary: Update an event rule
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventRuleInput"
+      responses:
+        "200":
+          description: Updated event rule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventRule"
+    delete:
+      operationId: deleteEventRule
+      tags: [events]
+      summary: Delete an event rule
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "204":
+          description: Deleted
+  /v1/jobs:
+    post:
+      operationId: createProcessingJob
+      tags: [jobs]
+      summary: Create a processing job for an event rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eventRuleId]
+              properties:
+                eventRuleId:
+                  type: string
+                language:
+                  type: string
+                  enum: [en, bn, hi]
+      responses:
+        "201":
+          description: Created job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessingJob"
+  /v1/jobs/{jobId}/uploads:
+    post:
+      operationId: uploadJobFiles
+      tags: [jobs]
+      summary: Upload files for a processing job
+      parameters:
+        - $ref: "#/components/parameters/JobId"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        "200":
+          description: Validation results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadReport"
+  /v1/jobs/{jobId}/process:
+    post:
+      operationId: processJob
+      tags: [jobs]
+      summary: Queue validation, auto-fix and ZIP creation
+      parameters:
+        - $ref: "#/components/parameters/JobId"
+      responses:
+        "202":
+          description: Job queued
+  /v1/jobs/{jobId}:
+    get:
+      operationId: getProcessingJob
+      tags: [jobs]
+      summary: Get job status
+      parameters:
+        - $ref: "#/components/parameters/JobId"
+      responses:
+        "200":
+          description: Processing job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessingJob"
+  /v1/jobs/{jobId}/download:
+    get:
+      operationId: downloadJobZip
+      tags: [jobs]
+      summary: Download final submission ZIP
+      parameters:
+        - $ref: "#/components/parameters/JobId"
+      responses:
+        "200":
+          description: ZIP file
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+  /v1/admin/analytics:
+    get:
+      operationId: getAdminAnalytics
+      tags: [admin]
+      summary: Get admin analytics dashboard data
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Analytics summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAnalytics"
 components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: fm_session
+  parameters:
+    EventId:
+      in: path
+      name: eventId
+      required: true
+      schema:
+        type: string
+    JobId:
+      in: path
+      name: jobId
+      required: true
+      schema:
+        type: string
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +227,125 @@ components:
           type: string
       required:
         - status
+    DocumentRule:
+      type: object
+      required: [id, key, label, required, acceptedFormats, maxSizeKb, outputName]
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        label:
+          type: string
+        required:
+          type: boolean
+        acceptedFormats:
+          type: array
+          items:
+            type: string
+        minSizeKb:
+          type: integer
+        maxSizeKb:
+          type: integer
+        widthPx:
+          type: integer
+        heightPx:
+          type: integer
+        dpi:
+          type: integer
+        outputName:
+          type: string
+        compressionTargetKb:
+          type: integer
+    EventRule:
+      allOf:
+        - $ref: "#/components/schemas/EventRuleInput"
+        - type: object
+          required: [id, slug, version]
+          properties:
+            id:
+              type: string
+            version:
+              type: integer
+    EventRuleInput:
+      type: object
+      required: [slug, title, category, description, namingPattern, zipStructure, documents]
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+          enum: [scheme, student, identity, job, admission]
+        description:
+          type: string
+        namingPattern:
+          type: string
+        zipStructure:
+          type: array
+          items:
+            type: string
+        mergeOrder:
+          type: array
+          items:
+            type: string
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentRule"
+        isPublished:
+          type: boolean
+    ProcessingJob:
+      type: object
+      required: [id, status, progress, recommendations]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [queued, processing, completed, failed, expired]
+        progress:
+          type: integer
+        uploadHealthScore:
+          type: integer
+        recommendations:
+          type: array
+          items:
+            type: string
+        downloadUrl:
+          type: string
+    UploadReport:
+      type: object
+      required: [files, missingDocuments, recommendations]
+      properties:
+        files:
+          type: array
+          items:
+            type: object
+        missingDocuments:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+    AdminAnalytics:
+      type: object
+      properties:
+        activeUsers:
+          type: integer
+        uploadCount:
+          type: integer
+        storageBytes:
+          type: integer
+        compressionSavingsBytes:
+          type: integer
+        topSchemes:
+          type: array
+          items:
+            type: object
+        failedUploadRate:
+          type: number
 
