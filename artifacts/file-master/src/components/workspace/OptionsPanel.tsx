@@ -22,9 +22,14 @@ import {
 } from '@/lib/processing/pdf/client-pdf';
 import {
   compressImage, resizeImage, convertToIco, convertSvgToPng, convertImageFormat,
-  getImageDimensions, cropImage, rotateFlipImage, addImageWatermark, removeImageBackground
+  getImageDimensions, cropImage, rotateFlipImage, addImageWatermark, removeImageBackground,
+  enhanceImage,
 } from '@/lib/processing/image/client-image';
 import { runClientSideHtmlToZip, runClientSideInlineHtml } from '@/lib/processing/archive/client-archive';
+import {
+  convertMdToHtml, convertHtmlToMd, convertXlsxToCsv, convertCsvToXlsx, cleanDocx,
+} from '@/lib/processing/office/client-office';
+import { runClientSidePdfToImages } from '@/lib/processing/pdf/client-pdf';
 
 // ── Shared primitives ───────────────────────────────────────────────────────
 
@@ -591,6 +596,157 @@ export const OptionsPanel: React.FC = () => {
         return;
       }
 
+      // ── Merge Documents — PDF or DOCX, client-side ────────────────────
+      if (actionName === 'merge_docs') {
+        const isPdfFile = (f: File) =>
+          f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
+        const isDocxFile = (f: File) =>
+          f.name.toLowerCase().endsWith('.docx') ||
+          f.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+        const pdfInputFiles  = rawFiles.filter(isPdfFile);
+        const docxInputFiles = rawFiles.filter(isDocxFile);
+        const hasOnlyPdfs  = pdfInputFiles.length === rawFiles.length && rawFiles.length >= 2;
+        const hasOnlyDocx  = docxInputFiles.length === rawFiles.length && rawFiles.length >= 2;
+        const hasMixed     = !hasOnlyPdfs && !hasOnlyDocx;
+
+        if (rawFiles.length < 2) {
+          setError('Upload at least 2 files to merge.');
+          setProcessing(false);
+          return;
+        }
+        if (hasMixed) {
+          setError('All files must be the same type — upload only PDFs or only DOCX files.');
+          setProcessing(false);
+          return;
+        }
+
+        // ── PDF path ─────────────────────────────────────────────────────
+        if (hasOnlyPdfs) {
+          updateOptions({ merge_docs_format: 'pdf' });
+          prog(20);
+          const blob = await runClientSidePdfMerge(pdfInputFiles);
+          prog(90);
+          setTimeout(() => done(blob, pdfInputFiles.reduce((a, f) => a + f.size, 0)), 300);
+          return;
+        }
+
+        // ── DOCX path — real client-side merge via JSZip ─────────────────
+        const outputFormat = operationOptions.merge_docs_format || 'docx';
+        prog(10);
+        const JSZip = (await import('jszip')).default;
+        const loadDocxZip = (file: File): Promise<InstanceType<typeof JSZip>> =>
+          new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+              try { resolve(await JSZip.loadAsync(e.target!.result as ArrayBuffer)); }
+              catch { reject(new Error(`"${file.name}" is not a valid DOCX file.`)); }
+            };
+            reader.onerror = () => reject(new Error(`Failed to read "${file.name}".`));
+            reader.readAsArrayBuffer(file);
+          });
+        prog(25);
+        const zips = await Promise.all(docxInputFiles.map(loadDocxZip));
+        prog(45);
+        const xmlContents: string[] = await Promise.all(
+          zips.map((zip, i) => {
+            const docFile = zip.file('word/document.xml');
+            if (!docFile) throw new Error(`"${docxInputFiles[i].name}" is missing word/document.xml.`);
+            return docFile.async('string');
+          })
+        );
+        prog(60);
+        const getBody = (xml: string) =>
+          (xml.match(/<w:body>([\s\S]*?)<\/w:body>/)?.[1] ?? '')
+            .replace(/<w:sectPr\b[\s\S]*?<\/w:sectPr>\s*/g, '').trim();
+        const getSectPr = (xml: string) =>
+          xml.match(/<w:sectPr\b[\s\S]*?<\/w:sectPr>/)?.[0] ?? '';
+        const pageBreak = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+        const combinedBody = xmlContents.map(getBody).join(pageBreak);
+        const sectPr = getSectPr(xmlContents[xmlContents.length - 1]);
+        prog(75);
+        const mergedXml = xmlContents[0].replace(
+          /<w:body>[\s\S]*?<\/w:body>/,
+          `<w:body>${combinedBody}${sectPr}</w:body>`
+        );
+        zips[0].file('word/document.xml', mergedXml);
+        prog(88);
+        if (outputFormat === 'pdf') {
+          doSimulate('application/pdf');
+          return;
+        }
+        const mergedBlob = await zips[0].generateAsync({
+          type: 'blob',
+          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        });
+        prog(96);
+        setTimeout(() => done(mergedBlob, docxInputFiles.reduce((a, f) => a + f.size, 0)), 200);
+        return;
+      }
+
+      // ── Image Enhance ──────────────────────────────────────────────────
+      if (actionName === 'enhance' && isImage) {
+        const blob = await enhanceImage(rawFiles[0], {
+          brightness: operationOptions.brightness ?? 1.0,
+          contrast:   operationOptions.contrast   ?? 1.0,
+          sharpness:  operationOptions.sharpness  ?? 1.0,
+          denoise:    operationOptions.denoise     ?? false,
+        });
+        prog(95);
+        setTimeout(() => done(blob, rawFiles[0].size), 200);
+        return;
+      }
+
+      // ── PDF → Images (ZIP) ─────────────────────────────────────────────
+      if (actionName === 'pdf_to_images') {
+        const dpi = operationOptions.dpi ?? 150;
+        prog(20);
+        const blob = await runClientSidePdfToImages(rawFiles[0], dpi);
+        prog(95);
+        setTimeout(() => done(blob, rawFiles[0].size), 200);
+        return;
+      }
+
+      // ── MD → HTML ─────────────────────────────────────────────────────
+      if (actionName === 'md_to_html') {
+        const blob = await convertMdToHtml(rawFiles[0]);
+        prog(95);
+        setTimeout(() => done(blob, rawFiles[0].size), 200);
+        return;
+      }
+
+      // ── HTML → MD ─────────────────────────────────────────────────────
+      if (actionName === 'html_to_md') {
+        const blob = await convertHtmlToMd(rawFiles[0]);
+        prog(95);
+        setTimeout(() => done(blob, rawFiles[0].size), 200);
+        return;
+      }
+
+      // ── XLSX → CSV ────────────────────────────────────────────────────
+      if (actionName === 'xlsx_to_csv') {
+        const blob = await convertXlsxToCsv(rawFiles[0]);
+        prog(95);
+        setTimeout(() => done(blob, rawFiles[0].size), 200);
+        return;
+      }
+
+      // ── CSV → XLSX ────────────────────────────────────────────────────
+      if (actionName === 'csv_to_xlsx') {
+        const blob = await convertCsvToXlsx(rawFiles[0]);
+        prog(95);
+        setTimeout(() => done(blob, rawFiles[0].size), 200);
+        return;
+      }
+
+      // ── DOCX cleanup ──────────────────────────────────────────────────
+      if (actionName === 'docx_cleanup') {
+        const blob = await cleanDocx(rawFiles[0]);
+        prog(95);
+        setTimeout(() => done(blob, rawFiles[0].size), 200);
+        return;
+      }
+
       // ── Backend/mock fallback ──────────────────────────────────────────
       const outputMimeMap: Record<string, string> = {
         pdf_to_docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -599,9 +755,7 @@ export const OptionsPanel: React.FC = () => {
         pdf_to_pdfa: 'application/pdf', pdf_protect: 'application/pdf',
         pdf_ocr: 'application/pdf', pdf_compare: 'application/pdf',
         pdf_summarize: 'text/plain', pdf_translate: 'application/pdf',
-        pdf_to_images: 'image/png', docx_to_pdf: 'application/pdf', pptx_to_pdf: 'application/pdf',
-        xlsx_to_csv: 'text/csv', csv_to_xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        md_to_html: 'text/html', html_to_md: 'text/markdown',
+        docx_to_pdf: 'application/pdf', pptx_to_pdf: 'application/pdf',
         html_to_zip: 'application/zip',
         video_to_audio: 'audio/mpeg', video_to_gif: 'image/gif', compress_audio: 'audio/mpeg',
         enhance: fileType,
@@ -1447,6 +1601,122 @@ export const OptionsPanel: React.FC = () => {
     );
   };
 
+  const renderMergeDocsOptions = () => {
+    const allPdf  = rawFiles.length > 0 && rawFiles.every(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+    const allDocx = rawFiles.length > 0 && rawFiles.every(f => f.name.toLowerCase().endsWith('.docx') || f.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    const mixed   = rawFiles.length > 0 && !allPdf && !allDocx;
+    const detectedType = allPdf ? 'pdf' : allDocx ? 'docx' : null;
+    return (
+    <div className="space-y-5">
+      <div className="p-4 rounded-xl bg-emerald-500/8 border border-emerald-500/20">
+        <div className="flex items-start gap-3">
+          <div className="h-9 w-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+            <FileText className="h-4 w-4 text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-foreground">Merge Documents</p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+              Combines multiple PDF or DOCX files into one, in the order shown above. All files must be the same type.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Detected file type badge */}
+      {detectedType && (
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold ${
+          detectedType === 'pdf'
+            ? 'bg-red-500/8 border-red-500/20 text-red-400'
+            : 'bg-emerald-500/8 border-emerald-500/20 text-emerald-400'
+        }`}>
+          <span>{detectedType === 'pdf' ? '📕' : '📄'}</span>
+          {detectedType === 'pdf'
+            ? `Merging ${rawFiles.length} PDF files → output will be PDF`
+            : `Merging ${rawFiles.length} DOCX files → choose output format below`}
+        </div>
+      )}
+
+      {mixed && (
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/8 border border-red-500/20 text-xs text-red-400">
+          <span className="shrink-0 mt-0.5">⚠</span>
+          <span>Mixed file types detected. Upload only PDFs or only DOCX files — not both.</span>
+        </div>
+      )}
+
+      {/* Output format — only relevant for DOCX input */}
+      {(allDocx || rawFiles.length === 0) && (
+        <div className="space-y-2">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Output format (DOCX input)</span>
+          <div className="grid grid-cols-2 gap-2.5">
+            {[
+              { value: 'docx', label: 'Word Document', sub: '.docx — stay editable', icon: '📄' },
+              { value: 'pdf',  label: 'PDF',            sub: '.pdf — universal format', icon: '📕' },
+            ].map(({ value, label, sub, icon }) => (
+              <button
+                key={value}
+                onClick={() => updateOptions({ merge_docs_format: value })}
+                className={`flex items-start gap-3 p-3.5 rounded-xl border text-left transition-all duration-150 ${
+                  (operationOptions.merge_docs_format || 'docx') === value
+                    ? 'border-primary bg-primary/8 shadow-glow'
+                    : 'border-border bg-card hover:border-primary/40 hover:bg-muted/30'
+                }`}
+              >
+                <span className="text-xl leading-none mt-0.5">{icon}</span>
+                <div>
+                  <p className="text-sm font-bold text-foreground">{label}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{sub}</p>
+                </div>
+                {(operationOptions.merge_docs_format || 'docx') === value && (
+                  <span className="ml-auto mt-0.5 h-4 w-4 rounded-full bg-primary flex items-center justify-center shrink-0">
+                    <span className="text-[9px] text-white font-black">✓</span>
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Add more files */}
+      <div className="space-y-1.5">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Files to merge</span>
+        <button
+          type="button"
+          onClick={() => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.docx,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf';
+            input.multiple = true;
+            input.onchange = async (e: Event) => {
+              const list = (e.target as HTMLInputElement).files;
+              if (!list || list.length === 0) return;
+              const filesArr = Array.from(list);
+              const activeJobId = jobId || Math.random().toString(36).substring(2, 15);
+              try {
+                addRawFiles(filesArr);
+                const uploaded = isMockMode
+                  ? await apiMock.uploadFiles(filesArr, activeJobId)
+                  : await apiClient.uploadFiles(filesArr, activeJobId);
+                addFiles(uploaded);
+              } catch (err: any) { setError(err.message || 'Upload failed.'); }
+            };
+            input.click();
+          }}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 text-sm font-semibold text-muted-foreground hover:text-primary transition-all duration-150"
+        >
+          <Plus className="h-4 w-4" />
+          Add more files ({files.length} loaded)
+        </button>
+        {files.length < 2 && (
+          <p className="text-xs text-amber-500 flex items-center gap-1.5">
+            <span>⚠</span> Upload at least 2 files (all PDF or all DOCX) to merge.
+          </p>
+        )}
+      </div>
+    </div>
+    );
+  };
+
   const renderEditOptions = () => {
     switch (actionName) {
       case 'pdf_crop':         return renderPdfCropOptions();
@@ -1494,7 +1764,9 @@ export const OptionsPanel: React.FC = () => {
       case 'edit':     return renderEditOptions();
       case 'split':    return renderSplitOptions();
       case 'resize':   return renderResizeOptions();
-      case 'merge':    return <InfoBox icon={<FileText className="h-4 w-4 text-primary" />} text="Files will be merged in upload order. Drag to reorder before processing." color="bg-primary/5 border-primary/15" />;
+      case 'merge':
+        if (actionName === 'merge_docs') return renderMergeDocsOptions();
+        return <InfoBox icon={<FileText className="h-4 w-4 text-primary" />} text="Files will be merged in the order shown above. Drag any file to reorder before processing." color="bg-primary/5 border-primary/15" />;
       default: return null;
     }
   };
@@ -1509,6 +1781,7 @@ export const OptionsPanel: React.FC = () => {
     pdf_to_excel: 'PDF → Excel', pdf_to_pdfa: 'PDF to PDF/A', scan_to_pdf: 'Scan to PDF',
     pdf_insert_link: 'Insert Link', pdf_insert_image: 'Insert Image', pdf_insert_shape: 'Draw Shapes',
     html_to_zip: 'HTML → ZIP',
+    merge_docs: 'Merge Documents',
     remove_bg: 'Remove Background', image_crop: 'Crop Image', image_rotate: 'Rotate & Flip', image_watermark: 'Add Watermark',
   };
   const operationLabels: Record<string, string> = {

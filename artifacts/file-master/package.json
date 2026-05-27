@@ -48,7 +48,6 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
-    "@workspace/api-client-react": "workspace:*",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
     "cmdk": "^1.1.1",
@@ -80,7 +79,13 @@
   },
   "dependencies": {
     "@imgly/background-removal": "^1.7.0",
+    "@types/turndown": "^5.0.6",
     "fflate": "^0.8.3",
-    "onnxruntime-web": "^1.26.0"
+    "jszip": "^3.10.1",
+    "marked": "^18.0.4",
+    "onnxruntime-web": "^1.26.0",
+    "pdfjs-dist": "^5.7.284",
+    "turndown": "^7.2.4",
+    "xlsx": "^0.18.5"
   }
 }

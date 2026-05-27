@@ -7,6 +7,7 @@ import router from "./routes";
 import apiV1Router from "./routes/apiV1";
 import { requestTimeout } from "./middlewares/requestTimeout";
 import { logger } from "./lib/logger";
+import { apiLimiter } from "./middlewares/rateLimit";
 
 const app: Express = express();
 
@@ -22,7 +23,8 @@ app.use(
       if (allowedOriginRegex.test(origin)) {
         return callback(null, true);
       }
-      return callback(new Error("Not allowed by CORS"));
+      logger.warn({ origin }, "CORS: blocked request from disallowed origin");
+      return callback(new Error("Not allowed by CORS policy"));
     },
     credentials: true,
   })
@@ -47,8 +49,13 @@ app.use(
     },
   }),
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// ── Body parsers (with size limits) ──────────────────────────────────────────
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+
+// ── Global rate limiting ──────────────────────────────────────────────────────
+app.use(apiLimiter);
 
 // Apply request timeout to API/processing routes
 app.use("/api/v1", requestTimeout(30000), apiV1Router);

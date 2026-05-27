@@ -4,8 +4,6 @@ An all-in-one secure file manipulation platform for PDFs, images, office documen
 
 ## Run & Operate
 
-The workspace consists of a React/Vite frontend and an Express-based API server:
-
 - **Frontend Dev Server**: `pnpm --filter @workspace/file-master run dev` (Runs on port `21533` with fallback)
 - **API Server Dev**: `pnpm --filter @workspace/api-server run dev` (Runs on port `8081` with automatic port collision resolver)
 - **Database Migrations**:
@@ -14,6 +12,12 @@ The workspace consists of a React/Vite frontend and an Express-based API server:
 - **Type Checking**: `pnpm run typecheck` — Runs strict typecheck checks across the entire monorepo workspace.
 - **Build Production**: `pnpm run build` — Automatically runs `orval` codegen prebuild, typechecks, and outputs production bundles.
 - **Run Tests**: `pnpm run test` — Executes the built-in Node.js test runner for validation.
+- pnpm workspaces, Node.js 24, TypeScript 5.9
+- API: Express 5
+- DB: PostgreSQL + Drizzle ORM
+- Validation: Zod (`zod/v4`), `drizzle-zod`
+- API codegen: Orval (from OpenAPI spec)
+- Build: esbuild (CJS bundle)
 
 ## Where Things Live
 

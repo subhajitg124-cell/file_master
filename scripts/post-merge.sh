@@ -1,14 +1,11 @@
 #!/bin/bash
-set -e
-# Timeout risk guard (timeout of 120s for install and 60s for migrations)
-TIMEOUT_LIMIT=120
+# post-merge.sh — runs after every task merge.
+set -euo pipefail
 
-echo "Running post-merge hooks with timeout guard..."
+echo "▶ post-merge: checking environment..."
 
-if command -v timeout &> /dev/null; then
-  timeout ${TIMEOUT_LIMIT}s pnpm install --frozen-lockfile || echo "pnpm install timed out or failed"
-  timeout 60s pnpm --filter @workspace/db run migrate || echo "Database migration timed out or failed"
-else
-  pnpm install --frozen-lockfile
-  pnpm --filter @workspace/db run migrate
+if [ -z "${DATABASE_URL:-}" ]; then
+  echo "⚠  WARNING: DATABASE_URL is not set. Set it before running the API server." >&2
 fi
+
+echo "✓ post-merge complete"

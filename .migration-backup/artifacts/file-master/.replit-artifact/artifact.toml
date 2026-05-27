@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/__migration-backup"
+title = "File Master (backup)"
+version = "1.0.0"
+id = "artifacts/file-master"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/__migration-backup" ]
+localPort = 21533
+
+[services.development]
+run = "pnpm --filter @workspace/file-master run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/file-master", "run", "build" ]
+publicDir = "artifacts/file-master/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21533"
+BASE_PATH = "/"
