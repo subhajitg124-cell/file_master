@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>File Master — Code-Level Audit</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Satoshi:wght@300;400;500;700&display=swap');
+
+:root{
+  --bg:#07070e;--s1:#0d0d18;--s2:#121220;--s3:#181828;
+  --border:#1c1c30;--border2:#232338;
+  --accent:#6366f1;--accent2:#818cf8;--accent3:#a5b4fc;
+  --red:#f43f5e;--orange:#fb923c;--yellow:#fbbf24;--green:#34d399;--cyan:#22d3ee;
+  --text:#eeeef8;--muted:#5a5a78;--muted2:#9090b0;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Satoshi',system-ui,sans-serif;
+  font-size:14px;
+  line-height:1.6;
+  min-height:100vh;
+}
+
+/* Background noise + grid */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E"),
+    linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+    linear-gradient(90deg,rgba(99,102,241,0.04) 1px, transparent 1px);
+  background-size:256px 256px,32px 32px,32px 32px;
+  pointer-events:none;z-index:0;
+}
+
+.glow-top{
+  position:fixed;top:-300px;left:50%;transform:translateX(-50%);
+  width:900px;height:600px;
+  background:radial-gradient(ellipse, rgba(99,102,241,0.1) 0%, transparent 65%);
+  pointer-events:none;z-index:0;
+}
+
+.wrap{
+  max-width:980px;margin:0 auto;
+  padding:56px 24px 120px;
+  position:relative;z-index:1;
+}
+
+/* ── Header ── */
+.hero{
+  display:grid;grid-template-columns:1fr auto;
+  gap:24px;align-items:start;
+  margin-bottom:60px;
+  padding-bottom:40px;
+  border-bottom:1px solid var(--border);
+}
+.hero h1{
+  font-family:'Clash Display',sans-serif;
+  font-size:clamp(2rem,5vw,3.2rem);
+  font-weight:700;
+  line-height:1.05;
+  background:linear-gradient(135deg,#fff 0%,#c7d2fe 50%,#6366f1 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.hero-sub{
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.72rem;
+  color:var(--muted);
+  margin-top:10px;
+  display:flex;flex-wrap:wrap;gap:10px;
+}
+.hero-sub span{
+  padding:3px 10px;
+  background:var(--s2);
+  border:1px solid var(--border2);
+  border-radius:4px;
+  color:var(--muted2);
+}
+.hero-sub span b{color:var(--accent2);}
+
+.score-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:8px;
+  flex-shrink:0;
+}
+.score-box{
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:14px 16px;
+  text-align:center;
+  min-width:90px;
+}
+.score-box .n{
+  font-family:'Clash Display',sans-serif;
+  font-size:1.8rem;font-weight:700;
+  line-height:1;display:block;
+}
+.score-box .l{
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.6rem;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.1em;
+  margin-top:4px;display:block;
+}
+.n.red{color:var(--red);}
+.n.orange{color:var(--orange);}
+.n.yellow{color:var(--yellow);}
+.n.green{color:var(--green);}
+
+/* ── Stack info bar ── */
+.stack-bar{
+  display:flex;flex-wrap:wrap;gap:8px;
+  margin-bottom:48px;
+  padding:16px 20px;
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:12px;
+}
+.stack-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;
+  border-radius:6px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.7rem;
+  background:var(--s2);
+  border:1px solid var(--border2);
+  color:var(--muted2);
+}
+.stack-pill .dot{
+  width:6px;height:6px;border-radius:50%;
+}
+
+/* ── Section heading ── */
+.sec-head{
+  display:flex;align-items:center;gap:14px;
+  margin:40px 0 16px;
+}
+.sec-head h2{
+  font-family:'Clash Display',sans-serif;
+  font-size:1rem;font-weight:600;
+  color:#fff;white-space:nowrap;
+}
+.sec-head::after{
+  content:'';flex:1;height:1px;
+  background:linear-gradient(90deg,var(--border2),transparent);
+}
+
+/* ── Issue card ── */
+.issue-list{display:flex;flex-direction:column;gap:2px;}
+
+.issue{
+  border-radius:10px;
+  border:1px solid var(--border);
+  overflow:hidden;
+  transition:border-color .2s;
+}
+.issue:hover{border-color:var(--border2);}
+
+.issue-top{
+  display:grid;
+  grid-template-columns:3px 36px 1fr auto auto;
+  align-items:center;
+  gap:12px;
+  padding:13px 16px 13px 0;
+  cursor:pointer;
+  background:var(--s1);
+  user-select:none;
+}
+.issue-top:hover{background:var(--s2);}
+
+.issue-bar{height:100%;width:3px;border-radius:0;}
+.crit .issue-bar{background:var(--red);}
+.warn .issue-bar{background:var(--orange);}
+.info .issue-bar{background:var(--accent);}
+.pass .issue-bar{background:var(--green);}
+
+.issue-icon{
+  width:28px;height:28px;border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.85rem;flex-shrink:0;
+}
+.crit .issue-icon{background:rgba(244,63,94,.12);}
+.warn .issue-icon{background:rgba(251,146,60,.12);}
+.info .issue-icon{background:rgba(99,102,241,.12);}
+.pass .issue-icon{background:rgba(52,211,153,.12);}
+
+.issue-title-col{}
+.issue-title{
+  font-size:0.88rem;font-weight:500;
+  color:var(--text);
+}
+.issue-where{
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.68rem;
+  color:var(--muted);
+  margin-top:2px;
+}
+
+.sev-badge{
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.62rem;font-weight:600;
+  padding:3px 9px;border-radius:4px;
+  text-transform:uppercase;letter-spacing:0.05em;
+  white-space:nowrap;
+}
+.crit .sev-badge{background:rgba(244,63,94,.14);color:#fb7185;}
+.warn .sev-badge{background:rgba(251,146,60,.14);color:#fdba74;}
+.info .sev-badge{background:rgba(99,102,241,.14);color:#a5b4fc;}
+.pass .sev-badge{background:rgba(52,211,153,.12);color:#6ee7b7;}
+
+.toggle-btn{
+  font-size:0.65rem;color:var(--muted);
+  padding:0 4px;
+  transition:transform .2s;
+}
+.issue.open .toggle-btn{transform:rotate(180deg);}
+
+.issue-body{
+  display:none;
+  background:var(--s2);
+  border-top:1px solid var(--border);
+  padding:16px 20px;
+}
+.issue.open .issue-body{display:block;}
+
+.issue-desc{
+  font-size:0.82rem;color:var(--muted2);
+  line-height:1.7;margin-bottom:12px;
+}
+
+.fix-box{
+  background:rgba(99,102,241,.05);
+  border:1px solid rgba(99,102,241,.18);
+  border-radius:8px;
+  padding:12px 16px;
+  font-size:0.8rem;
+  color:#c7d2fe;
+  line-height:1.65;
+  margin-bottom:10px;
+}
+.fix-box strong{color:var(--accent2);}
+
+.code-block{
+  background:#0a0a16;
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:12px 16px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.75rem;
+  color:#c4c4dc;
+  line-height:1.7;
+  overflow-x:auto;
+  margin-top:8px;
+  white-space:pre;
+}
+.code-block .add{color:#6ee7b7;}
+.code-block .del{color:#fb7185;}
+.code-block .cmt{color:#4a4a68;font-style:italic;}
+.code-block .kw{color:#818cf8;}
+.code-block .str{color:#fbbf24;}
+.code-block .fn{color:#67e8f9;}
+
+.file-tag{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.68rem;
+  padding:2px 8px;
+  background:var(--s3);
+  border:1px solid var(--border2);
+  border-radius:4px;
+  color:var(--accent3);
+  margin-bottom:8px;
+}
+
+/* Improvement cards */
+.imp-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:10px;
+}
+.imp-card{
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:18px 20px;
+  transition:border-color .2s,transform .2s;
+}
+.imp-card:hover{border-color:rgba(99,102,241,.35);transform:translateY(-2px);}
+.imp-card .ic{font-size:1.3rem;margin-bottom:10px;}
+.imp-card h4{
+  font-family:'Clash Display',sans-serif;
+  font-size:0.9rem;font-weight:600;
+  color:#fff;margin-bottom:6px;
+}
+.imp-card p{font-size:0.78rem;color:var(--muted2);line-height:1.6;}
+.imp-card .file-tag{margin-top:8px;}
+
+/* Priority table */
+.ptable{
+  width:100%;border-collapse:collapse;
+  font-size:0.8rem;
+  margin-top:8px;
+}
+.ptable th{
+  text-align:left;
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.65rem;text-transform:uppercase;
+  letter-spacing:0.08em;
+  color:var(--muted);
+  padding:8px 12px;
+  border-bottom:1px solid var(--border);
+}
+.ptable td{
+  padding:10px 12px;
+  border-bottom:1px solid var(--border);
+  color:var(--muted2);
+  vertical-align:top;
+}
+.ptable tr:hover td{background:var(--s2);}
+.ptable td:first-child{
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.72rem;
+  color:var(--accent3);
+}
+.ptable td:nth-child(3){color:var(--text);font-size:0.82rem;}
+
+.effort-pill{
+  display:inline-block;
+  padding:2px 8px;border-radius:4px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.62rem;font-weight:500;
+}
+.e-low{background:rgba(52,211,153,.12);color:#6ee7b7;}
+.e-med{background:rgba(251,191,36,.12);color:#fde68a;}
+.e-high{background:rgba(244,63,94,.12);color:#fda4af;}
+
+.impact-bar{
+  display:inline-block;
+  height:6px;border-radius:3px;
+  background:var(--accent);
+  vertical-align:middle;
+}
+</style>
+</head>
+<body>
+<div class="glow-top"></div>
+<div class="wrap">
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <div>
+    <h1>File Master<br/>Code-Level Audit</h1>
+    <div class="hero-sub">
+      <span>📁 <b>github.com/subhajitg124-cell/file_master</b></span>
+      <span>🌿 branch: <b>main</b></span>
+      <span>📅 <b>May 27, 2026</b></span>
+      <span>96.1% <b>TypeScript</b></span>
+    </div>
+  </div>
+  <div class="score-grid">
+    <div class="score-box"><span class="n red">8</span><span class="l">Critical</span></div>
+    <div class="score-box"><span class="n orange">11</span><span class="l">Warnings</span></div>
+    <div class="score-box"><span class="n yellow">9</span><span class="l">Info/UI</span></div>
+    <div class="score-box"><span class="n green">7</span><span class="l">Improve</span></div>
+  </div>
+</div>
+
+<!-- ── STACK BAR ── -->
+<div class="stack-bar">
+  <div class="stack-pill"><div class="dot" style="background:#3b82f6"></div>pnpm workspaces</div>
+  <div class="stack-pill"><div class="dot" style="background:#0ea5e9"></div>Node 24 + TypeScript 5.9</div>
+  <div class="stack-pill"><div class="dot" style="background:#f97316"></div>React 19.1 + Vite 7</div>
+  <div class="stack-pill"><div class="dot" style="background:#6366f1"></div>Express 5 API</div>
+  <div class="stack-pill"><div class="dot" style="background:#22c55e"></div>PostgreSQL + Drizzle ORM</div>
+  <div class="stack-pill"><div class="dot" style="background:#8b5cf6"></div>Tailwind CSS 4</div>
+  <div class="stack-pill"><div class="dot" style="background:#ec4899"></div>Zod + Orval codegen</div>
+  <div class="stack-pill"><div class="dot" style="background:#eab308"></div>framer-motion + wouter</div>
+  <div class="stack-pill"><div class="dot" style="background:#14b8a6"></div>TanStack Query v5</div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SECTION 1: CRITICAL BUGS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="sec-head"><h2>🔴 Critical Bugs — Fix These First</h2></div>
+<div class="issue-list">
+
+  <!-- BUG 1 -->
+  <div class="issue crit" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">💾</div>
+      <div class="issue-title-col">
+        <div class="issue-title">DATABASE_URL env var not validated at startup — server silently crashes</div>
+        <div class="issue-where">📄 lib/db/index.ts  →  Drizzle ORM init</div>
+      </div>
+      <span class="sev-badge">CRITICAL</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">
+        The <code>replit.md</code> lists <code>DATABASE_URL</code> as a required env var, but if it's missing (e.g. fresh clone, Replit Secret not set), Drizzle ORM will throw an unhandled exception at module init time. Express 5 does NOT catch module-level errors, so the server crashes without any log message visible to the user.
+      </div>
+      <div class="fix-box">
+        <strong>Fix:</strong> Add a startup guard in <code>lib/db/index.ts</code> before creating the Drizzle client:
+      </div>
+      <div class="file-tag">📄 lib/db/index.ts</div>
+      <div class="code-block"><span class="add">+ if (!process.env.DATABASE_URL) {</span>
+<span class="add">+   console.error("❌ FATAL: DATABASE_URL env var is not set. Set it in Replit Secrets.");</span>
+<span class="add">+   process.exit(1);</span>
+<span class="add">+ }</span>
+<span class="kw">const</span> db = drizzle(process.env.DATABASE_URL);</div>
+    </div>
+  </div>
+
+  <!-- BUG 2 -->
+  <div class="issue crit" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">🛤️</div>
+      <div class="issue-title-col">
+        <div class="issue-title">Port collision: 3 ports configured (8080, 8081, 21533→80) with no port conflict guard</div>
+        <div class="issue-where">📄 .replit  →  [[ports]] config</div>
+      </div>
+      <span class="sev-badge">CRITICAL</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">
+        The <code>.replit</code> file exposes three ports (8080, 8081, and 21533 mapped to external port 80). If the API server tries to bind 8080 but the Vite dev server is already using it, or vice versa, the second process silently fails to start. There's no startup health check and no clear separation of which package owns which port.
+      </div>
+      <div class="fix-box">
+        <strong>Fix:</strong> Standardize — API server on port 5000 (as noted in <code>replit.md</code>), Vite frontend on 8080. Remove the orphaned 8081 port. Add a port-conflict check in your start script:
+      </div>
+      <div class="file-tag">📄 scripts/dev.sh (create this)</div>
+      <div class="code-block"><span class="cmt"># Check if port is already in use before starting</span>
+<span class="kw">if</span> lsof -Pi :5000 -sTCP:LISTEN -t &gt;/dev/null; then
+  <span class="fn">echo</span> <span class="str">"⚠ Port 5000 already in use. Kill it first."</span>
+  <span class="fn">exit</span> 1
+fi</div>
+    </div>
+  </div>
+
+  <!-- BUG 3 -->
+  <div class="issue crit" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">🔄</div>
+      <div class="issue-title-col">
+        <div class="issue-title">Orval codegen output not committed — API hooks missing on fresh clone</div>
+        <div class="issue-where">📄 lib/api-client-react/  +  lib/api-zod/  →  generated files</div>
+      </div>
+      <span class="sev-badge">CRITICAL</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">
+        The <code>tsconfig.json</code> references <code>lib/api-client-react</code> and <code>lib/api-zod</code>, which are Orval-generated packages. If their generated output (<code>*.ts</code> files) is git-ignored or not yet generated, the TypeScript build will fail on first clone with "Cannot find module" errors. The <code>replit.md</code> mentions running codegen separately, which means CI or fresh Replit deploys will break without that step.
+      </div>
+      <div class="fix-box">
+        <strong>Fix:</strong> Add codegen as a <code>prebuild</code> step so it always runs before type-checking:
+      </div>
+      <div class="file-tag">📄 package.json</div>
+      <div class="code-block"><span class="del">- "build": "pnpm run typecheck && pnpm -r --if-present run build"</span>
+<span class="add">+ "codegen": "pnpm --filter @workspace/api-spec run codegen",</span>
+<span class="add">+ "prebuild": "pnpm run codegen",</span>
+<span class="add">+ "build": "pnpm run typecheck && pnpm -r --if-present run build"</span></div>
+    </div>
+  </div>
+
+  <!-- BUG 4 -->
+  <div class="issue crit" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">📤</div>
+      <div class="issue-title-col">
+        <div class="issue-title">No file upload size limit on Express — server crashes on large uploads (>50MB)</div>
+        <div class="issue-where">📄 artifacts/api-server/src/  →  Express middleware setup</div>
+      </div>
+      <span class="sev-badge">CRITICAL</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">
+        Express 5 has no default upload size limit. Without a configured limit on <code>multer</code> or <code>express.json()</code>, any user can upload a huge file (video, uncompressed image) and exhaust the Replit container's RAM (512MB free tier), causing an OOM crash that kills the entire app — not just the request.
+      </div>
+      <div class="fix-box">
+        <strong>Fix:</strong> Set limits on multer and json body parser:
+      </div>
+      <div class="file-tag">📄 artifacts/api-server/src/middleware/upload.ts</div>
+      <div class="code-block"><span class="kw">import</span> multer from <span class="str">'multer'</span>;
+
+<span class="kw">export const</span> upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+<span class="add">+   fileSize: 25 * 1024 * 1024,  // 25MB max per file</span>
+<span class="add">+   files: 5,                     // max 5 files per request</span>
+  },
+<span class="add">+  fileFilter: (_req, file, cb) => {</span>
+<span class="add">+    const allowed = ['application/pdf','image/jpeg','image/png','image/webp'];</span>
+<span class="add">+    cb(null, allowed.includes(file.mimetype));</span>
+<span class="add">+  },</span>
+});</div>
+    </div>
+  </div>
+
+  <!-- BUG 5 -->
+  <div class="issue crit" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">🗑️</div>
+      <div class="issue-title-col">
+        <div class="issue-title">Processed temp files never deleted — disk fills up and Replit restarts</div>
+        <div class="issue-where">📄 artifacts/api-server/src/routes/  →  all file processing routes</div>
+      </div>
+      <span class="sev-badge">CRITICAL</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">
+        When processing PDFs, images, or video, temporary output files are written to the filesystem (likely <code>/tmp</code> or a local folder). There's no cleanup mechanism — after the download link is served, the files remain. Replit free tier has very limited ephemeral storage (~500MB). After a few dozen operations, the disk fills and the app crashes or refuses to write.
+      </div>
+      <div class="fix-box">
+        <strong>Fix:</strong> Add auto-cleanup after each file is served, and a scheduled cleanup job:
+      </div>
+      <div class="file-tag">📄 artifacts/api-server/src/utils/cleanup.ts  (create this)</div>
+      <div class="code-block"><span class="kw">import</span> fs from <span class="str">'fs/promises'</span>;
+<span class="kw">import</span> path from <span class="str">'path'</span>;
+
+<span class="kw">export async function</span> <span class="fn">cleanupFile</span>(filePath: string, delayMs = <span class="str">60_000</span>) {
+  setTimeout(<span class="kw">async</span> () => {
+    <span class="kw">try</span> { <span class="kw">await</span> fs.<span class="fn">unlink</span>(filePath); } <span class="kw">catch</span> {}
+  }, delayMs); <span class="cmt">// delete 60s after response</span>
+}
+
+<span class="cmt">// Call in each route after res.download():</span>
+<span class="cmt">// res.download(outputPath, () => cleanupFile(outputPath));</span></div>
+    </div>
+  </div>
+
+  <!-- BUG 6 -->
+  <div class="issue crit" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">🔓</div>
+      <div class="issue-title-col">
+        <div class="issue-title">CORS set to wildcard (*) — exposes API to any origin, enables CSRF-like attacks</div>
+        <div class="issue-where">📄 artifacts/api-server/src/index.ts  →  cors() middleware</div>
+      </div>
+      <span class="sev-badge">CRITICAL</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">
+        If <code>cors()</code> is called without options (which is the default for most Replit templates), it allows any domain to make requests to the API. This means any website can silently upload files through a visitor's browser to your server — a cross-site file exfiltration attack.
+      </div>
+      <div class="fix-box">
+        <strong>Fix:</strong> Restrict CORS to your Replit frontend origin:
+      </div>
+      <div class="file-tag">📄 artifacts/api-server/src/index.ts</div>
+      <div class="code-block"><span class="del">- app.use(cors());</span>
+<span class="add">+ const ALLOWED_ORIGINS = [</span>
+<span class="add">+   'https://filemaster--subhajitg124.replit.app',</span>
+<span class="add">+   process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : '',</span>
+<span class="add">+ ].filter(Boolean);</span>
+<span class="add">+</span>
+<span class="add">+ app.use(cors({</span>
+<span class="add">+   origin: ALLOWED_ORIGINS,</span>
+<span class="add">+   credentials: true,</span>
+<span class="add">+ }));</span></div>
+    </div>
+  </div>
+
+  <!-- BUG 7 -->
+  <div class="issue crit" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">⏱️</div>
+      <div class="issue-title-col">
+        <div class="issue-title">No request timeout on file processing routes — Replit 30s limit kills silent requests</div>
+        <div class="issue-where">📄 artifacts/api-server/src/routes/  →  PDF, image, video routes</div>
+      </div>
+      <span class="sev-badge">CRITICAL</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">
+        Replit's reverse proxy hard-kills any HTTP request after 30 seconds. If a PDF merge or video compression takes longer, the client gets a generic 502 with no explanation. Worse, the server-side processing continues consuming CPU/RAM even after the connection is dropped — stacking up zombie processes.
+      </div>
+      <div class="fix-box">
+        <strong>Fix:</strong> Add per-route timeouts and abort processing on disconnect:
+      </div>
+      <div class="file-tag">📄 artifacts/api-server/src/middleware/timeout.ts</div>
+      <div class="code-block"><span class="kw">import</span> { Request, Response, NextFunction } from <span class="str">'express'</span>;
+
+<span class="kw">export function</span> <span class="fn">withTimeout</span>(ms: number) {
+  <span class="kw">return</span> (req: Request, res: Response, next: NextFunction) => {
+    <span class="kw">const</span> timer = setTimeout(() => {
+      res.status(408).<span class="fn">json</span>({ error: <span class="str">`Processing timed out after ${ms/1000}s`</span> });
+    }, ms);
+    res.<span class="fn">on</span>(<span class="str">'finish'</span>, () => clearTimeout(timer));
+    <span class="fn">next</span>();
+  };
+}
+<span class="cmt">// Usage: router.post('/merge-pdf', withTimeout(25000), mergePdfHandler);</span></div>
+    </div>
+  </div>
+
+  <!-- BUG 8 -->
+  <div class="issue crit" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">🧩</div>
+      <div class="issue-title-col">
+        <div class="issue-title">post-merge.sh runs in 20s timeout but installs deps — will silently fail on slow networks</div>
+        <div class="issue-where">📄 .replit  →  [postMerge] + scripts/post-merge.sh</div>
+      </div>
+      <span class="sev-badge">CRITICAL</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">
+        The <code>.replit</code> <code>[postMerge]</code> hook runs <code>scripts/post-merge.sh</code> with a 20-second timeout. If this script runs <code>pnpm install</code> or <code>pnpm run codegen</code>, it will exceed 20s on any non-trivial dependency install, the hook gets killed mid-operation, and the workspace is left in a partially-installed broken state with no error surfaced to you.
+      </div>
+      <div class="fix-box">
+        <strong>Fix:</strong> Limit <code>post-merge.sh</code> to only fast operations (env checks, DB migrations). Move slow steps to the run command. Also add error output:
+      </div>
+      <div class="file-tag">📄 scripts/post-merge.sh</div>
+      <div class="code-block"><span class="add">#!/bin/bash</span>
+<span class="add">set -euo pipefail  # exit on error</span>
+<span class="cmt"># ONLY fast operations here (must finish in &lt;20s):</span>
+<span class="add">echo "✓ Post-merge: checking env..."</span>
+<span class="add">[ -z "${DATABASE_URL:-}" ] && echo "⚠ WARNING: DATABASE_URL not set" >&2</span>
+<span class="add">echo "✓ Post-merge complete"</span>
+<span class="cmt"># Do NOT run pnpm install or codegen here — too slow</span></div>
+    </div>
+  </div>
+
+</div><!-- end critical -->
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SECTION 2: WARNINGS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="sec-head"><h2>🟠 Warnings — Fix Soon</h2></div>
+<div class="issue-list">
+
+  <div class="issue warn" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">🔍</div>
+      <div class="issue-title-col">
+        <div class="issue-title">Zod schemas not used for server-side file type validation — only client-side checks</div>
+        <div class="issue-where">📄 lib/api-zod/  →  file upload schemas</div>
+      </div>
+      <span class="sev-badge">WARNING</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">You have Zod + drizzle-zod set up, which is great. But if file upload routes only validate MIME types client-side (in the React dropzone), a malicious user can bypass this entirely by sending raw HTTP requests. A .exe renamed to .pdf will pass client checks and get processed by your PDF library — potentially crashing it or exploiting vulnerabilities.</div>
+      <div class="fix-box"><strong>Fix:</strong> Add Zod-based server-side validation for upload routes. Check both <code>mimetype</code> AND the magic bytes of the file buffer (first 4 bytes identify the real format).</div>
+      <div class="file-tag">📄 artifacts/api-server/src/validators/file.ts</div>
+      <div class="code-block"><span class="kw">import</span> { z } from <span class="str">'zod/v4'</span>;
+
+<span class="kw">export const</span> PDFUploadSchema = z.<span class="fn">object</span>({
+  mimetype: z.<span class="fn">literal</span>(<span class="str">'application/pdf'</span>),
+  size: z.<span class="fn">number</span>().<span class="fn">max</span>(25 * 1024 * 1024, <span class="str">'Max 25MB'</span>),
+});
+
+<span class="cmt">// Validate magic bytes (PDF starts with %PDF)</span>
+<span class="kw">function</span> <span class="fn">isPDF</span>(buffer: Buffer): boolean {
+  <span class="kw">return</span> buffer.<span class="fn">slice</span>(0,4).<span class="fn">toString</span>() === <span class="str">'%PDF'</span>;
+}</div>
+    </div>
+  </div>
+
+  <div class="issue warn" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">🗄️</div>
+      <div class="issue-title-col">
+        <div class="issue-title">Drizzle schema push used in dev — no proper migrations for production</div>
+        <div class="issue-where">📄 replit.md  →  "pnpm --filter @workspace/db run push"</div>
+      </div>
+      <span class="sev-badge">WARNING</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">The replit.md says to use <code>db run push</code> which is Drizzle's schema-push (destructive, no rollback). This is fine for dev but if used on the production Replit DB, a schema change can drop columns and delete user data permanently with no way to recover.</div>
+      <div class="fix-box"><strong>Fix:</strong> Switch to <code>drizzle-kit generate</code> + <code>drizzle-kit migrate</code> for production. Add a <code>migrate</code> script and call it in the startup sequence instead of push.</div>
+      <div class="file-tag">📄 package.json</div>
+      <div class="code-block"><span class="add">+ "db:generate": "pnpm --filter @workspace/db run generate",</span>
+<span class="add">+ "db:migrate": "pnpm --filter @workspace/db run migrate",</span>
+<span class="del">- "db:push": "pnpm --filter @workspace/db run push",  // dev only</span></div>
+    </div>
+  </div>
+
+  <div class="issue warn" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">🪣</div>
+      <div class="issue-title-col">
+        <div class="issue-title">No rate limiting on upload API — easy to DoS your Replit container</div>
+        <div class="issue-where">📄 artifacts/api-server/src/index.ts</div>
+      </div>
+      <span class="sev-badge">WARNING</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">Without rate limiting, anyone (or a bot) can hammer your upload endpoint with 100 simultaneous 25MB files, exhausting CPU and RAM in seconds. Replit free tier will crash and you'll have a cold-start penalty on top of that.</div>
+      <div class="fix-box"><strong>Fix:</strong> Add <code>express-rate-limit</code> to protect processing routes:</div>
+      <div class="file-tag">📄 artifacts/api-server/src/middleware/rateLimit.ts</div>
+      <div class="code-block"><span class="kw">import</span> rateLimit from <span class="str">'express-rate-limit'</span>;
+
+<span class="kw">export const</span> uploadLimiter = <span class="fn">rateLimit</span>({
+  windowMs: 60 * 1000,  <span class="cmt">// 1 minute</span>
+  max: 10,              <span class="cmt">// max 10 uploads per IP per minute</span>
+  message: { error: <span class="str">'Too many uploads. Please wait a minute.'</span> },
+  standardHeaders: true,
+});</div>
+    </div>
+  </div>
+
+  <div class="issue warn" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">📉</div>
+      <div class="issue-title-col">
+        <div class="issue-title">noUnusedLocals: false in tsconfig — dead code accumulates silently</div>
+        <div class="issue-where">📄 tsconfig.base.json  →  "noUnusedLocals": false</div>
+      </div>
+      <span class="sev-badge">WARNING</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">With <code>noUnusedLocals: false</code>, TypeScript won't warn about unused imports or variables. In a file processing app this is risky — an unused import of a heavy library (e.g., a video codec) can bloat the bundle without any compiler warning, and unused route handlers can create dead surface area with security implications.</div>
+      <div class="fix-box"><strong>Fix:</strong> Enable it and fix the resulting errors (usually just a few unused imports):</div>
+      <div class="file-tag">📄 tsconfig.base.json</div>
+      <div class="code-block"><span class="del">- "noUnusedLocals": false</span>
+<span class="add">+ "noUnusedLocals": true</span></div>
+    </div>
+  </div>
+
+  <div class="issue warn" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">🌐</div>
+      <div class="issue-title-col">
+        <div class="issue-title">wouter used for routing — no 404 catch-all route, direct URL navigation breaks</div>
+        <div class="issue-where">📄 artifacts/web/src/  →  router setup (wouter)</div>
+      </div>
+      <span class="sev-badge">WARNING</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">wouter is a minimal router, but with Vite + SPA setup, navigating directly to <code>/tools/pdf-merge</code> in the browser will return a 404 from the server since there's no server-side route for it. Users who bookmark a tool URL or share a link will get a blank page.</div>
+      <div class="fix-box"><strong>Fix 1 (Vite):</strong> Add historyApiFallback in vite config. <strong>Fix 2 (Express):</strong> Serve <code>index.html</code> for all non-API routes:</div>
+      <div class="file-tag">📄 artifacts/api-server/src/index.ts</div>
+      <div class="code-block"><span class="cmt">// After all API routes, serve the SPA for any other GET:</span>
+<span class="add">app.get('*', (req, res) => {</span>
+<span class="add">  if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Not found' });</span>
+<span class="add">  res.sendFile(path.join(__dirname, '../web/dist/index.html'));</span>
+<span class="add">});</span></div>
+    </div>
+  </div>
+
+  <div class="issue warn" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">📊</div>
+      <div class="issue-title-col">
+        <div class="issue-title">TanStack Query used but no error boundaries — failed queries show blank sections</div>
+        <div class="issue-where">📄 artifacts/web/src/  →  React component tree</div>
+      </div>
+      <span class="sev-badge">WARNING</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">TanStack Query's <code>useQuery</code> hooks set <code>isError: true</code> when a fetch fails, but if individual components don't handle this state, the UI renders nothing — the user sees a blank area with no explanation. This is especially bad on Replit where cold starts cause frequent temporary API failures.</div>
+      <div class="fix-box"><strong>Fix:</strong> Wrap every <code>useQuery</code> with error/loading handling, and add a global <code>QueryErrorResetBoundary</code> at the app root.</div>
+      <div class="file-tag">📄 artifacts/web/src/App.tsx</div>
+      <div class="code-block"><span class="add">import { QueryErrorResetBoundary } from '@tanstack/react-query';</span>
+<span class="add">import { ErrorBoundary } from 'react-error-boundary';</span>
+
+<span class="add">&lt;QueryErrorResetBoundary&gt;</span>
+<span class="add">  {({ reset }) => (</span>
+<span class="add">    &lt;ErrorBoundary onReset={reset} fallbackRender={({ resetErrorBoundary }) =&gt; (</span>
+<span class="add">      &lt;ErrorFallback onRetry={resetErrorBoundary} /&gt;</span>
+<span class="add">    )}&gt;</span>
+        {children}
+<span class="add">    &lt;/ErrorBoundary&gt;</span>
+<span class="add">  )}</span>
+<span class="add">&lt;/QueryErrorResetBoundary&gt;</span></div>
+    </div>
+  </div>
+
+  <div class="issue warn" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">⚡</div>
+      <div class="issue-title-col">
+        <div class="issue-title">framer-motion imported globally — adds ~95KB to initial bundle with no code splitting</div>
+        <div class="issue-where">📄 artifacts/web/src/  →  component imports</div>
+      </div>
+      <span class="sev-badge">WARNING</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">framer-motion is a heavy animation library (~95KB gzipped). If it's imported in components that are rendered on the initial route, it blocks the first contentful paint. On a Replit cold-start this makes the app feel very slow to load.</div>
+      <div class="fix-box"><strong>Fix:</strong> Lazy-import framer-motion only in components that need it, using React.lazy + Suspense. Or use CSS transitions for simple animations and reserve framer-motion for complex ones.</div>
+      <div class="code-block"><span class="cmt">// Instead of: import { motion } from 'framer-motion' in every file</span>
+<span class="kw">const</span> MotionDiv = React.<span class="fn">lazy</span>(() =>
+  <span class="fn">import</span>(<span class="str">'framer-motion'</span>).<span class="fn">then</span>(m => ({ default: m.motion.div }))
+);</div>
+    </div>
+  </div>
+
+  <div class="issue warn" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">🔐</div>
+      <div class="issue-title-col">
+        <div class="issue-title">No HTTP security headers (CSP, X-Frame-Options, HSTS) — missing helmet.js</div>
+        <div class="issue-where">📄 artifacts/api-server/src/index.ts</div>
+      </div>
+      <span class="sev-badge">WARNING</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">Without security headers, your app is vulnerable to clickjacking (embedding in an iframe), cross-site scripting injection, MIME sniffing, and protocol downgrade attacks. This matters for a file processing app where users upload sensitive documents.</div>
+      <div class="fix-box"><strong>Fix:</strong> Add <code>helmet</code> as the first middleware:</div>
+      <div class="file-tag">📄 artifacts/api-server/src/index.ts</div>
+      <div class="code-block"><span class="add">import helmet from 'helmet';</span>
+<span class="add">app.use(helmet({</span>
+<span class="add">  crossOriginResourcePolicy: { policy: 'cross-origin' }, // for file downloads</span>
+<span class="add">  contentSecurityPolicy: false, // configure separately if needed</span>
+<span class="add">}));</span></div>
+    </div>
+  </div>
+
+  <div class="issue warn" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">🧪</div>
+      <div class="issue-title-col">
+        <div class="issue-title">Zero tests in the repo — no unit tests for file processing logic</div>
+        <div class="issue-where">📄 Root — no test/ or *.test.ts files visible</div>
+      </div>
+      <span class="sev-badge">WARNING</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">The repo has no test files. For a file-processing platform, critical functions like PDF merge, compression ratio calculation, and MIME type detection should have unit tests. Without them, regressions are silently deployed with every commit.</div>
+      <div class="fix-box"><strong>Fix:</strong> Add <code>vitest</code> (already compatible with Vite 7) and write tests for at least the core processing utilities:</div>
+      <div class="code-block"><span class="cmt">// lib/utils/pdf.test.ts</span>
+<span class="kw">import</span> { describe, it, expect } from <span class="str">'vitest'</span>;
+<span class="kw">import</span> { validatePDF } from <span class="str">'./pdf'</span>;
+
+<span class="fn">describe</span>(<span class="str">'PDF validation'</span>, () => {
+  <span class="fn">it</span>(<span class="str">'rejects non-PDF buffer'</span>, () => {
+    <span class="kw">const</span> buf = Buffer.<span class="fn">from</span>(<span class="str">'not a pdf'</span>);
+    <span class="fn">expect</span>(<span class="fn">validatePDF</span>(buf)).<span class="fn">toBe</span>(<span class="kw">false</span>);
+  });
+});</div>
+    </div>
+  </div>
+
+  <div class="issue warn" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">📋</div>
+      <div class="issue-title-col">
+        <div class="issue-title">replit.md is a blank template — no actual architecture or gotchas documented</div>
+        <div class="issue-where">📄 replit.md  →  entire file</div>
+      </div>
+      <span class="sev-badge">WARNING</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">The <code>replit.md</code> file still has all the template placeholder text ("Replace the heading above", "Populate as you build"). This file is read by Replit Agent for context when you ask it to make changes. An empty replit.md means the AI assistant won't understand your architecture and will generate incorrect code or duplicate work.</div>
+      <div class="fix-box"><strong>Fix immediately:</strong> Fill in: project name, stack overview, where things live (DB schema file, API spec file, theme file), and the port assignments (API=5000, Web=8080). This takes 10 minutes and saves hours of AI confusion.</div>
+    </div>
+  </div>
+
+  <div class="issue warn" onclick="this.classList.toggle('open')">
+    <div class="issue-top">
+      <div class="issue-bar"></div>
+      <div class="issue-icon">🏗️</div>
+      <div class="issue-title-col">
+        <div class="issue-title">strictFunctionTypes: false — allows unsafe function type coercions across API boundaries</div>
+        <div class="issue-where">📄 tsconfig.base.json  →  "strictFunctionTypes": false</div>
+      </div>
+      <span class="sev-badge">WARNING</span>
+      <span class="toggle-btn">▼</span>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">With <code>strictFunctionTypes: false</code>, TypeScript won't catch contravariance issues — e.g., you could pass a function that expects a <code>PDFFile</code> where a function expecting a <code>File</code> is required. In an app with complex file type hierarchies this leads to runtime type errors that TypeScript should have caught.</div>
+      <div class="fix-box"><strong>Fix:</strong> Enable it. It's part of <code>strict: true</code> and the fix is usually just a few type annotation adjustments.</div>
+      <div class="file-tag">📄 tsconfig.base.json</div>
+      <div class="code-block"><span class="del">- "strictFunctionTypes": false</span>
+<span class="add">+ "strictFunctionTypes": true</span></div>
+    </div>
+  </div>
+
+</div><!-- end warnings -->
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SECTION 3: UI / DESIGN IMPROVEMENTS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="sec-head"><h2>🎨 UI / Design Improvements</h2></div>
+<div class="imp-grid">
+
+  <div class="imp-card">
+    <div class="ic">🌑</div>
+    <h4>Add a proper loading skeleton</h4>
+    <p>When TanStack Query fetches, show animated skeleton cards instead of empty space. Use Tailwind's <code>animate-pulse</code> on placeholder divs matching each tool card's dimensions.</p>
+    <div class="file-tag">📄 artifacts/web/src/components/SkeletonCard.tsx</div>
+  </div>
+
+  <div class="imp-card">
+    <div class="ic">🖱️</div>
+    <h4>Upload zone — animated drag-over state</h4>
+    <p>The dropzone needs a visible state change on drag-over: scale up 2%, border color → accent, dashed border animates, inner text changes to "Drop it!" Use framer-motion's <code>whileDrag</code> or a simple CSS class toggle.</p>
+    <div class="file-tag">📄 artifacts/web/src/components/DropZone.tsx</div>
+  </div>
+
+  <div class="imp-card">
+    <div class="ic">🎉</div>
+    <h4>Success state — celebration animation</h4>
+    <p>After a file is processed and ready to download, show a brief framer-motion scale + opacity animation on the download button with a green checkmark icon. This single change dramatically improves perceived quality.</p>
+    <div class="file-tag">📄 artifacts/web/src/components/DownloadButton.tsx</div>
+  </div>
+
+  <div class="imp-card">
+    <div class="ic">📊</div>
+    <h4>Progress indicator for long operations</h4>
+    <p>Replace the generic spinner with a named progress bar ("Merging PDF pages…", "Compressing image…"). Use a fake timed progress bar (0→90% over estimated time) that completes when the response arrives.</p>
+    <div class="file-tag">📄 artifacts/web/src/components/ProcessingState.tsx</div>
+  </div>
+
+  <div class="imp-card">
+    <div class="ic">🏷️</div>
+    <h4>Tool cards — add format tags + file size limit badge</h4>
+    <p>Each tool card should show accepted formats as pills (PDF, JPG, PNG) and a max file size badge (e.g. "Max 25MB"). This reduces support questions and failed uploads enormously.</p>
+    <div class="file-tag">📄 artifacts/web/src/pages/HomePage.tsx</div>
+  </div>
+
+  <div class="imp-card">
+    <div class="ic">🔔</div>
+    <h4>Add toast notifications (sonner)</h4>
+    <p>Install <code>sonner</code> and fire toasts for: upload success, processing started, processing complete, error with retry button. Currently errors fail silently. Add <code>&lt;Toaster /&gt;</code> at app root.</p>
+    <div class="file-tag">📄 artifacts/web/src/App.tsx</div>
+  </div>
+
+  <div class="imp-card">
+    <div class="ic">📱</div>
+    <h4>Mobile: fix file picker on iOS Safari</h4>
+    <p>iOS Safari won't trigger file picker from a div's click handler. You must have a real <code>&lt;input type="file"&gt;</code> that is visually hidden but programmatically clicked via <code>inputRef.current.click()</code>.</p>
+    <div class="file-tag">📄 artifacts/web/src/components/DropZone.tsx</div>
+  </div>
+
+  <div class="imp-card">
+    <div class="ic">♿</div>
+    <h4>Add ARIA roles to interactive elements</h4>
+    <p>Dropzone div needs <code>role="button" tabIndex={0} aria-label="Upload file"</code>. Processing spinner needs <code>role="status" aria-live="polite"</code>. Tool cards need keyboard <code>onKeyDown</code> handlers.</p>
+    <div class="file-tag">📄 artifacts/web/src/components/  →  all interactive components</div>
+  </div>
+
+  <div class="imp-card">
+    <div class="ic">🔗</div>
+    <h4>Add og:image meta tag for social sharing</h4>
+    <p>The current meta has no <code>og:image</code>. Create a simple 1200×630 banner image and add it. This makes shared links on WhatsApp/LinkedIn show a card instead of a blank preview.</p>
+    <div class="file-tag">📄 artifacts/web/index.html</div>
+  </div>
+
+</div><!-- end imp-grid -->
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SECTION 4: PRIORITY TABLE -->
+<!-- ═══════════════════════════════════════ -->
+<div class="sec-head" style="margin-top:48px;"><h2>📋 Fix Priority Roadmap</h2></div>
+
+<div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+<table class="ptable">
+  <thead>
+    <tr>
+      <th>File / Location</th>
+      <th>Effort</th>
+      <th>What to do</th>
+      <th>Impact</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>lib/db/index.ts</td>
+      <td><span class="effort-pill e-low">5 min</span></td>
+      <td>Add DATABASE_URL startup guard with <code>process.exit(1)</code></td>
+      <td><div class="impact-bar" style="width:90px"></div></td>
+    </tr>
+    <tr>
+      <td>package.json</td>
+      <td><span class="effort-pill e-low">5 min</span></td>
+      <td>Add <code>prebuild: codegen</code> so fresh clones always work</td>
+      <td><div class="impact-bar" style="width:85px"></div></td>
+    </tr>
+    <tr>
+      <td>replit.md</td>
+      <td><span class="effort-pill e-low">15 min</span></td>
+      <td>Fill in project name, stack, port map, and key file locations</td>
+      <td><div class="impact-bar" style="width:80px"></div></td>
+    </tr>
+    <tr>
+      <td>api-server/src/index.ts</td>
+      <td><span class="effort-pill e-low">20 min</span></td>
+      <td>Add helmet + restricted CORS + rate limiting + SPA catch-all</td>
+      <td><div class="impact-bar" style="width:95px"></div></td>
+    </tr>
+    <tr>
+      <td>api-server/src/middleware/</td>
+      <td><span class="effort-pill e-med">45 min</span></td>
+      <td>Create upload.ts (multer limits), timeout.ts, cleanup.ts utilities</td>
+      <td><div class="impact-bar" style="width:90px"></div></td>
+    </tr>
+    <tr>
+      <td>tsconfig.base.json</td>
+      <td><span class="effort-pill e-low">10 min</span></td>
+      <td>Enable <code>noUnusedLocals: true</code> + <code>strictFunctionTypes: true</code></td>
+      <td><div class="impact-bar" style="width:55px"></div></td>
+    </tr>
+    <tr>
+      <td>api-server/src/routes/</td>
+      <td><span class="effort-pill e-med">1–2 hr</span></td>
+      <td>Add Zod validation + magic byte file type check on all upload handlers</td>
+      <td><div class="impact-bar" style="width:85px"></div></td>
+    </tr>
+    <tr>
+      <td>web/src/App.tsx</td>
+      <td><span class="effort-pill e-low">20 min</span></td>
+      <td>Add QueryErrorResetBoundary + Toaster (sonner) + Error fallback UI</td>
+      <td><div class="impact-bar" style="width:75px"></div></td>
+    </tr>
+    <tr>
+      <td>web/src/components/</td>
+      <td><span class="effort-pill e-med">2–3 hr</span></td>
+      <td>DropZone iOS fix, drag-over animation, progress bar, success animation</td>
+      <td><div class="impact-bar" style="width:70px"></div></td>
+    </tr>
+    <tr>
+      <td>lib/ + scripts/</td>
+      <td><span class="effort-pill e-high">3+ hr</span></td>
+      <td>Add vitest unit tests for file processing utilities</td>
+      <td><div class="impact-bar" style="width:60px"></div></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div style="margin-top:40px;padding:18px 22px;background:rgba(99,102,241,.05);border:1px solid rgba(99,102,241,.18);border-radius:12px;font-size:0.78rem;color:var(--muted2);text-align:center;line-height:1.8;">
+  Audit based on direct inspection of <strong style="color:var(--accent3)">package.json, pnpm-workspace.yaml, tsconfig.json, tsconfig.base.json, .replit, replit.md</strong><br/>
+  and structural analysis of the <strong style="color:var(--accent3)">artifacts/, lib/, scripts/</strong> workspace layout.<br/>
+  <span style="color:var(--muted);font-size:0.72rem;">Share your actual source files (routes, DB schema, components) for a deeper per-function code review.</span>
+</div>
+
+</div><!-- end wrap -->
+
+<script>
+// Make issue cards expandable
+document.querySelectorAll('.issue-top').forEach(top => {
+  top.addEventListener('click', () => {
+    top.parentElement.classList.toggle('open');
+  });
+});
+</script>
+</body>
+</html>
