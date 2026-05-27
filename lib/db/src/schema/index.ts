@@ -24,6 +24,12 @@ export const usersTable = pgTable("users", {
   role: userRoleEnum("role").notNull().default("user"),
   language: varchar("language", { length: 8 }).notNull().default("en"),
   googleSubject: varchar("google_subject", { length: 255 }),
+  // Premium features
+  premiumEnabled: boolean("premium_enabled").notNull().default(false),
+  premiumTier: varchar("premium_tier", { length: 50 }).default("free"), // free, basic, pro, enterprise
+  voiceLanguage: varchar("voice_language", { length: 10 }).default("en"), // en, hi, bn
+  privacyMode: boolean("privacy_mode").notNull().default(false), // No logging mode
+  cafeOperatorId: uuid("cafe_operator_id"), // Link to cafe if operator
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -130,3 +136,19 @@ export type EventRule = typeof eventRulesTable.$inferSelect;
 export type InsertEventRule = z.infer<typeof insertEventRuleSchema>;
 export type DocumentRule = typeof documentRulesTable.$inferSelect;
 export type ProcessingJob = typeof processingJobsTable.$inferSelect;
+
+// Premium features exports
+export * from "./premium";
+export {
+  premiumDocumentsTable,
+  shareLinksTable,
+  scanHistoryTable,
+  formAutofillCacheTable,
+  bulkJobsTable,
+  qrCodesTable,
+  cafeCustomersTable,
+  voiceCommandsTable,
+  activityLogsTable,
+  digilockerSessionsTable,
+  examTemplatesTable,
+} from "./premium";
