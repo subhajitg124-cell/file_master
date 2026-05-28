@@ -132,6 +132,7 @@ const ColorField: React.FC<{ label: string; value: string; onChange: (v: string)
     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</label>
     <div className="flex items-center gap-2 flex-wrap">
       <input type="color" value={value} onChange={(e) => onChange(e.target.value)}
+        aria-label={label}
         className="h-9 w-12 rounded-lg border border-border cursor-pointer bg-card p-0.5" />
       {swatches.map(c => (
         <button key={c} onClick={() => onChange(c)} title={c}
@@ -162,6 +163,8 @@ const AnnotationRow: React.FC<AnnotationRowProps> = ({ ann, idx, onChange, onRem
         <div className="flex items-center gap-2">
           {expanded ? <ChevronUp className="h-3 w-3 text-muted-foreground" /> : <ChevronDown className="h-3 w-3 text-muted-foreground" />}
           <button onClick={(e) => { e.stopPropagation(); onRemove(ann.id); }}
+            title="Remove annotation"
+            aria-label="Remove annotation"
             className="h-5 w-5 rounded-md bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors">
             <Minus className="h-3 w-3" />
           </button>
@@ -184,12 +187,16 @@ const AnnotationRow: React.FC<AnnotationRowProps> = ({ ann, idx, onChange, onRem
             <div className="space-y-1">
               <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Page #</label>
               <input type="number" min={1} value={ann.page} onChange={(e) => onChange(ann.id, { page: Math.max(1, parseInt(e.target.value) || 1) })}
+                placeholder="1"
+                aria-label="Page number"
                 className="w-full p-2 bg-card border border-border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40" />
             </div>
             {(ann.type === 'text' || ann.type === 'replace') && (
               <div className="space-y-1">
                 <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Font size</label>
                 <input type="number" min={6} max={120} value={ann.fontSize || 12} onChange={(e) => onChange(ann.id, { fontSize: parseInt(e.target.value) || 12 })}
+                  placeholder="12"
+                  aria-label="Font size"
                   className="w-full p-2 bg-card border border-border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40" />
               </div>
             )}
@@ -200,6 +207,8 @@ const AnnotationRow: React.FC<AnnotationRowProps> = ({ ann, idx, onChange, onRem
               <div key={key} className="space-y-1">
                 <label className="text-[9px] text-muted-foreground">{lbl}</label>
                 <input type="number" min={0} value={(ann as any)[key] || 0} onChange={(e) => onChange(ann.id, { [key]: parseInt(e.target.value) || 0 })}
+                  placeholder="0"
+                  aria-label={lbl}
                   className="w-full p-1.5 bg-card border border-border rounded-md text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary/40" />
               </div>
             ))}
@@ -212,6 +221,7 @@ const AnnotationRow: React.FC<AnnotationRowProps> = ({ ann, idx, onChange, onRem
               <div className="flex items-center gap-2 mt-1">
                 <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Fill color</label>
                 <input type="color" value={ann.fillColorHex || '#ffffff'} onChange={(e) => onChange(ann.id, { fillColorHex: e.target.value })}
+                  aria-label="Fill color"
                   className="h-7 w-10 rounded border border-border cursor-pointer bg-card p-0.5" />
               </div>
             )}

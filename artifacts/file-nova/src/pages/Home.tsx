@@ -426,6 +426,82 @@ export default function Home() {
               <ShowcaseComparison />
             </section>
 
+            {/* Visual Step-by-Step User Guide Section */}
+            <section className="rounded-3xl border border-border/80 bg-card/40 glass p-6 sm:p-8 shadow-premium relative overflow-hidden card-shine">
+              <div className="absolute top-0 left-0 w-80 h-80 bg-gradient-to-br from-purple-500/5 via-indigo-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+              
+              <div className="mx-auto max-w-3xl text-center mb-10">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-bold text-primary mb-3">
+                  <Play className="h-3.5 w-3.5 text-primary fill-primary/10 animate-pulse" />
+                  <span>Step-by-Step Instructions</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-foreground">{t.guideTitle}</h2>
+                <p className="mt-2 text-xs sm:text-sm text-muted-foreground">{t.guideSubtitle}</p>
+              </div>
+
+              {/* Stepper Steps Grid */}
+              <div className="grid gap-6 md:grid-cols-4 relative">
+                {/* Horizontal connector line for large screens */}
+                <div className="hidden md:block absolute top-[44px] left-[10%] right-[10%] h-0.5 bg-gradient-to-r from-primary/30 via-indigo-400/20 to-emerald-500/30 z-0" />
+
+                {/* Step 1 */}
+                <div className="rounded-2xl border border-border bg-card/65 p-5 relative z-10 hover:border-primary/40 hover:-translate-y-1 transition duration-300 flex flex-col justify-between h-full group">
+                  <div className="flex justify-between items-start">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner">
+                      <WandSparkles className="h-5 w-5" />
+                    </div>
+                    <span className="text-3xl font-black text-primary/20 select-none group-hover:text-primary/35 transition-colors">01</span>
+                  </div>
+                  <div className="mt-4 flex-1">
+                    <h3 className="font-bold text-foreground text-sm leading-snug">{t.step1Title}</h3>
+                    <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{t.step1Desc}</p>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="rounded-2xl border border-border bg-card/65 p-5 relative z-10 hover:border-indigo-400/40 hover:-translate-y-1 transition duration-300 flex flex-col justify-between h-full group">
+                  <div className="flex justify-between items-start">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-500 shadow-inner">
+                      <Upload className="h-5 w-5" />
+                    </div>
+                    <span className="text-3xl font-black text-indigo-500/20 select-none group-hover:text-indigo-500/35 transition-colors">02</span>
+                  </div>
+                  <div className="mt-4 flex-1">
+                    <h3 className="font-bold text-foreground text-sm leading-snug">{t.step2Title}</h3>
+                    <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{t.step2Desc}</p>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="rounded-2xl border border-border bg-card/65 p-5 relative z-10 hover:border-purple-400/40 hover:-translate-y-1 transition duration-300 flex flex-col justify-between h-full group">
+                  <div className="flex justify-between items-start">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/10 text-purple-500 shadow-inner">
+                      <Zap className="h-5 w-5 text-amber-500" />
+                    </div>
+                    <span className="text-3xl font-black text-purple-500/20 select-none group-hover:text-purple-500/35 transition-colors">03</span>
+                  </div>
+                  <div className="mt-4 flex-1">
+                    <h3 className="font-bold text-foreground text-sm leading-snug">{t.step3Title}</h3>
+                    <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{t.step3Desc}</p>
+                  </div>
+                </div>
+
+                {/* Step 4 */}
+                <div className="rounded-2xl border border-border bg-card/65 p-5 relative z-10 hover:border-emerald-400/40 hover:-translate-y-1 transition duration-300 flex flex-col justify-between h-full group">
+                  <div className="flex justify-between items-start">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 shadow-inner">
+                      <Download className="h-5 w-5" />
+                    </div>
+                    <span className="text-3xl font-black text-emerald-500/20 select-none group-hover:text-emerald-500/35 transition-colors">04</span>
+                  </div>
+                  <div className="mt-4 flex-1">
+                    <h3 className="font-bold text-foreground text-sm leading-snug">{t.step4Title}</h3>
+                    <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{t.step4Desc}</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             <section className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
               <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                 <div className="mb-4 flex items-center justify-between">
