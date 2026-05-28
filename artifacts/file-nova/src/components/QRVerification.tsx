@@ -288,6 +288,8 @@ function ScanTab() {
         ref={fileInputRef}
         type="file"
         accept="image/*"
+        title="Upload QR Code Image"
+        aria-label="Upload QR Code Image"
         onChange={handleFileUpload}
         className="hidden"
       />

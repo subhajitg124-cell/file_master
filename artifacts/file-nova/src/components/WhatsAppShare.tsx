@@ -146,6 +146,8 @@ export function WhatsAppShareDialog({ documentId, documentName, onClose }: Whats
           {onClose && (
             <button
               onClick={onClose}
+              title="Close dialog"
+              aria-label="Close dialog"
               className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background/60 text-muted-foreground hover:text-foreground transition"
             >
               <X className="h-4 w-4" />

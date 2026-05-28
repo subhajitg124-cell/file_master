@@ -269,7 +269,7 @@ export function ExamToolkit() {
 
           {/* Photo Upload */}
           <div>
-            <label className="text-xs font-bold text-muted-foreground mb-1.5 block">
+            <label htmlFor="photo-upload-input" className="text-xs font-bold text-muted-foreground mb-1.5 block">
               📷 Upload Photo
             </label>
             <div
@@ -282,9 +282,12 @@ export function ExamToolkit() {
               </span>
             </div>
             <input
+              id="photo-upload-input"
               ref={photoInputRef}
               type="file"
               accept="image/*"
+              title="Upload Photo"
+              aria-label="Upload Photo"
               onChange={(e) => e.target.files?.[0] && validatePhoto(e.target.files[0])}
               className="hidden"
             />
@@ -313,7 +316,7 @@ export function ExamToolkit() {
 
           {/* Signature Upload */}
           <div>
-            <label className="text-xs font-bold text-muted-foreground mb-1.5 block">
+            <label htmlFor="sig-upload-input" className="text-xs font-bold text-muted-foreground mb-1.5 block">
               ✍️ Upload Signature
             </label>
             <div
@@ -326,9 +329,12 @@ export function ExamToolkit() {
               </span>
             </div>
             <input
+              id="sig-upload-input"
               ref={sigInputRef}
               type="file"
               accept="image/*"
+              title="Upload Signature"
+              aria-label="Upload Signature"
               onChange={(e) => e.target.files?.[0] && validateSignature(e.target.files[0])}
               className="hidden"
             />
