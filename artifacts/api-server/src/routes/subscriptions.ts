@@ -99,8 +99,16 @@ router.get("/status", async (req: Request, res: Response) => {
 // ── 2. POST /order — Create Razorpay Order ────────────────────────────────────
 router.post("/order", async (req: Request, res: Response) => {
   try {
-    const { plan } = z.object({ plan: z.enum(["basic", "pro", "elite"]) }).parse(req.body);
-    const amount = PLAN_PRICES[plan];
+    const { plan, discountPercentage } = z.object({ 
+      plan: z.enum(["basic", "pro", "elite"]),
+      discountPercentage: z.number().optional(),
+    }).parse(req.body);
+
+    let amount = PLAN_PRICES[plan];
+    if (discountPercentage && discountPercentage > 0 && discountPercentage <= 100) {
+      amount = Math.round(amount * (1 - discountPercentage / 100));
+    }
+    
     const user = await getOrCreateDefaultUser();
 
     const rp = getRazorpayInstance();
@@ -182,6 +190,18 @@ router.post("/verify", async (req: Request, res: Response) => {
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 30); // 30 days expiry
 
+        let finalAmount = PLAN_PRICES[body.plan];
+        try {
+          const pendingRows = await db
+            .select()
+            .from(subscriptionsTable)
+            .where(eq(subscriptionsTable.razorpayOrderId, body.razorpay_order_id))
+            .limit(1);
+          if (pendingRows.length > 0) {
+            finalAmount = pendingRows[0].amount;
+          }
+        } catch (_) {}
+
         // Update subscriptions table
         await db
           .insert(subscriptionsTable)
@@ -189,7 +209,7 @@ router.post("/verify", async (req: Request, res: Response) => {
             userId: user.id,
             plan: body.plan,
             status: "active",
-            amount: PLAN_PRICES[body.plan],
+            amount: finalAmount,
             currency: "INR",
             razorpayOrderId: body.razorpay_order_id,
             razorpayPaymentId: body.razorpay_payment_id,

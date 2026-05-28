@@ -39,7 +39,7 @@ import { PreviewCanvas } from "@/components/workspace/PreviewCanvas";
 import { ProgressTracker } from "@/components/workspace/ProgressTracker";
 import { ToolGrid } from "@/components/workspace/ToolGrid";
 import { UploadZone } from "@/components/workspace/UploadZone";
-// (document-automation already imported at top)
+import { TestingNotice } from "@/components/TestingNotice";
 
 const languageLabels: Record<AppLanguage, string> = {
   en: "English",
@@ -62,7 +62,10 @@ export default function Home() {
     updateOptions,
     clearStore,
   } = useFileStore();
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    const saved = localStorage.getItem("filenova-theme");
+    return saved === "light" || saved === "dark" ? saved : "light";
+  });
   const { language, setLanguage } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedRuleId, setSelectedRuleId] = useState(eventRules[0].id);
@@ -78,6 +81,7 @@ export default function Home() {
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
+    localStorage.setItem("filenova-theme", theme);
   }, [theme]);
 
   // SEO: Set page title dynamically for Google
@@ -145,8 +149,13 @@ export default function Home() {
     }, 100);
   };
 
+  const themeClass = admin.settings.eventTheme && admin.settings.eventTheme !== "none"
+    ? `event-theme-${admin.settings.eventTheme}`
+    : "";
+
   return (
-    <div className="min-h-screen bg-background text-foreground bg-mesh">
+    <div className={`min-h-screen bg-background text-foreground bg-mesh ${themeClass}`}>
+      <TestingNotice />
       <header className="sticky top-0 z-50 border-b border-border bg-background/82 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
@@ -252,8 +261,8 @@ export default function Home() {
         {files.length === 0 && (
           <div className="space-y-8 animate-fade-in">
             {/* Row 1: Hero Banner */}
-            <section className="relative overflow-hidden rounded-3xl border border-border bg-card/60 glass shadow-premium p-8 sm:p-12 card-shine animated-lines-bg">
-              <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] items-center">
+            <section className="relative overflow-hidden rounded-3xl border border-border/80 bg-card/60 glass shadow-premium p-8 sm:p-12 card-shine animated-lines-bg">
+              <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] items-center">
                 <div className="space-y-6 text-center lg:text-left">
                   <div className="inline-flex items-center gap-2 rounded-full border border-soft bg-secondary px-3 py-1.5 text-xs font-bold text-primary mx-auto lg:mx-0">
                     <ShieldCheck className="h-4 w-4" />
@@ -261,7 +270,7 @@ export default function Home() {
                   </div>
                   <h1 className="text-4xl font-black leading-tight sm:text-5xl md:text-6xl">
                     <span className="gradient-text">{t.fixMode}</span>
-                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-400 to-cyan-400 mt-2">{t.logoSubtitle}</span>
+                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-550 to-cyan-555 mt-2 leading-none">{t.logoSubtitle}</span>
                   </h1>
                   <p className="text-sm leading-7 text-muted-foreground sm:text-base max-w-2xl mx-auto lg:mx-0">
                     {t.assistantCopy} {t.aiRecommendation4}
@@ -280,19 +289,62 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Right side benefits illustration/pillars */}
-                <div className="grid gap-3 grid-cols-2">
-                  {automationPillars.map(({ label, value, icon: Icon }) => (
-                    <div key={label} className="rounded-2xl border border-border bg-card/75 p-4 shadow-soft transition-transform hover:-translate-y-1 duration-300">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary mb-3">
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
-                      <p className="text-sm font-black mt-1 text-foreground">{value}</p>
+                {/* Right side: Mockup Showcase with floating stickers */}
+                <div className="relative flex justify-center items-center lg:pl-4">
+                  {/* Decorative mesh background behind image */}
+                  <div className="absolute -inset-4 bg-gradient-to-tr from-primary/10 via-purple-500/10 to-cyan-500/10 rounded-3xl blur-2xl opacity-60 animate-glow-breathe pointer-events-none" />
+
+                  {/* Main mockup frame */}
+                  <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card/85 p-2 shadow-2xl glass transform hover:scale-[1.02] transition-transform duration-500">
+                    <img 
+                      src={`${import.meta.env.BASE_URL}document_processing_mockup.png`} 
+                      alt="FileNova Document Workspace mockup" 
+                      className="rounded-lg shadow-inner max-w-full h-auto object-cover border border-border/40"
+                      style={{ maxHeight: "300px" }}
+                    />
+                    
+                    {/* Floating stickers / badges */}
+                    {/* Sticker 1: PDF Badge */}
+                    <div className="absolute -top-3 -left-3 animate-float rounded-xl bg-red-500/90 hover:bg-red-500 text-white font-black text-xs px-3 py-1.5 shadow-lg border border-red-400/30 flex items-center gap-1.5 cursor-default transition-all duration-300">
+                      <FileCheck2 className="h-3 w-3" />
+                      <span>.pdf</span>
                     </div>
-                  ))}
+
+                    {/* Sticker 2: ZIP Success Stamp */}
+                    <div className="absolute -bottom-3 -right-2 animate-float rounded-2xl bg-emerald-500/95 hover:bg-emerald-500 text-white font-black text-xs px-4 py-2 shadow-lg border border-emerald-400/40 flex items-center gap-2 cursor-default transition-all duration-300" style={{ animationDelay: "1s" }}>
+                      <CheckCircle2 className="h-4 w-4 text-white fill-white/10" />
+                      <span>Ready to Upload</span>
+                    </div>
+
+                    {/* Sticker 3: Auto Resize badge */}
+                    <div className="absolute top-1/2 -right-4 -translate-y-1/2 animate-float rounded-xl bg-indigo-600/90 hover:bg-indigo-600 text-white font-black text-[11px] px-3 py-1.5 shadow-lg border border-indigo-400/30 flex items-center gap-1.5 cursor-default transition-all duration-300" style={{ animationDelay: "2s" }}>
+                      <Zap className="h-3 w-3 text-amber-300" />
+                      <span>Auto Resize</span>
+                    </div>
+
+                    {/* Sticker 4: Secure check */}
+                    <div className="absolute -bottom-2 -left-2 animate-float rounded-xl bg-slate-900/90 hover:bg-slate-900 text-slate-100 font-bold text-[10px] px-3 py-1 shadow-lg border border-slate-700/50 flex items-center gap-1.5 cursor-default transition-all duration-300" style={{ animationDelay: "1.5s" }}>
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                      <span>100% Client-Side</span>
+                    </div>
+                  </div>
                 </div>
               </div>
+            </section>
+
+            {/* Automation pillars section */}
+            <section className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+              {automationPillars.map(({ label, value, icon: Icon }) => (
+                <div key={label} className="rounded-2xl border border-border/80 bg-card/60 glass p-5 shadow-soft hover:shadow-panel hover:border-primary/30 transition-all hover:-translate-y-1 duration-300 flex items-start gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+                    <p className="text-base font-black mt-0.5 text-foreground leading-tight">{value}</p>
+                  </div>
+                </div>
+              ))}
             </section>
 
             {/* Row 2: Assistant & Upload dropzone */}
@@ -355,6 +407,23 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+            </section>
+
+            {/* Attractive Real Example Showcase Section */}
+            <section className="rounded-3xl border border-border/80 bg-card/40 glass p-6 sm:p-8 shadow-premium relative overflow-hidden card-shine">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-indigo-500/5 via-purple-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+              
+              <div className="mx-auto max-w-3xl text-center mb-8">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-bold text-primary mb-3">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>Real-Life Portal Solved Examples</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-foreground">How FileNova Solves Strict Government Portal Limits</h2>
+                <p className="mt-2 text-xs sm:text-sm text-muted-foreground">Most government portals in India (like Scholarship, PAN, Passport, Admissions) reject files that aren't cropped, sized, or compressed to exact limits. See how FileNova processes them automatically.</p>
+              </div>
+
+              {/* Showcase interactive component */}
+              <ShowcaseComparison />
             </section>
 
             <section className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
@@ -564,6 +633,143 @@ export default function Home() {
           </p>
         </div>
       </section>
+    </div>
+  );
+}
+
+function ShowcaseComparison() {
+  const [activeTab, setActiveTab] = useState<"aadhaar" | "photo" | "signature">("aadhaar");
+
+  const examples = {
+    aadhaar: {
+      title: "Aadhaar Card Front & Back",
+      portal: "Lakshmir Bhandar / Scholarship Portals",
+      limit: "PDF file, size under 200 KB",
+      rawName: "IMG_2026_0528_SCAN.jpg",
+      rawSize: "3.4 MB",
+      rawDetails: "Messy border, shadow from mobile camera, wrong format (JPG)",
+      rawStatus: "Rejected by Portal ❌",
+      outName: "aadhaar_card_optimized.pdf",
+      outSize: "148 KB",
+      outDetails: "Auto-cropped, noise reduction, compiled to PDF format",
+      outStatus: "100% Accepted ✅"
+    },
+    photo: {
+      title: "Passport Size Photo",
+      portal: "PAN Card / College Admission Portals",
+      limit: "JPG format, exact 200 x 230 px, under 50 KB",
+      rawName: "my_pic_full.png",
+      rawSize: "1.8 MB",
+      rawDetails: "High-resolution background, uncropped, size too large",
+      rawStatus: "Rejected by Portal ❌",
+      outName: "passport_photo.jpg",
+      outSize: "34 KB",
+      outDetails: "Face centered, scaled to 200x230px, compressed under 50KB",
+      outStatus: "100% Accepted ✅"
+    },
+    signature: {
+      title: "Applicant Signature Scan",
+      portal: "Job Application / Scholar Portals",
+      limit: "JPG format, exact 140 x 60 px, under 30 KB",
+      rawName: "sig_raw_photo.jpg",
+      rawSize: "840 KB",
+      rawDetails: "Yellowish paper background, blurred, size too large",
+      rawStatus: "Rejected by Portal ❌",
+      outName: "signature_optimized.jpg",
+      outSize: "18 KB",
+      outDetails: "Contrast boosted to make white paper clean, signature lines sharp",
+      outStatus: "100% Accepted ✅"
+    }
+  };
+
+  const selected = examples[activeTab];
+
+  return (
+    <div className="space-y-6">
+      {/* Tabs */}
+      <div className="flex justify-center gap-2 border-b border-border/50 pb-3">
+        {(Object.keys(examples) as Array<keyof typeof examples>).map((key) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`rounded-xl px-4 py-2.5 text-xs font-black transition-all ${
+              activeTab === key
+                ? "bg-primary text-primary-foreground shadow-md shadow-glow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            {key === "aadhaar" ? "Aadhaar Card" : key === "photo" ? "Passport Photo" : "Signature Scan"}
+          </button>
+        ))}
+      </div>
+
+      {/* Grid Comparison */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Raw Scan Card */}
+        <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-5 relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-2 right-2 rounded-lg bg-red-500/10 px-2.5 py-1 text-[10px] font-black text-red-500 uppercase tracking-wider">
+            {selected.rawStatus}
+          </div>
+          <div>
+            <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-red-500" />
+              Raw Mobile Scan (Input)
+            </h3>
+            <p className="mt-1 font-mono text-[11px] text-muted-foreground">{selected.rawName}</p>
+            
+            {/* Visual representation */}
+            <div className="my-5 rounded-xl border border-red-500/20 bg-background/80 p-4 h-36 flex flex-col justify-center items-center relative opacity-85">
+              {/* Overlay cross grid lines */}
+              <div className="absolute inset-0 grid grid-cols-6 grid-rows-4 opacity-10 pointer-events-none">
+                {Array.from({ length: 24 }).map((_, i) => (
+                  <div key={i} className="border-[0.5px] border-red-500" />
+                ))}
+              </div>
+              <div className="text-center space-y-1">
+                <p className="text-lg font-black text-red-500">{selected.rawSize}</p>
+                <p className="text-[10px] text-red-400/90 font-bold uppercase tracking-wider">{selected.rawDetails}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="border-t border-red-500/10 pt-3 text-xs text-muted-foreground flex justify-between items-center">
+            <span>Portal Target: {selected.limit}</span>
+            <span className="font-bold text-red-500">Failed Limit</span>
+          </div>
+        </div>
+
+        {/* Optimized Card */}
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5 relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-2 right-2 rounded-lg bg-emerald-500/15 px-2.5 py-1 text-[10px] font-black text-emerald-500 uppercase tracking-wider">
+            {selected.outStatus}
+          </div>
+          <div>
+            <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              FileNova Clean Output
+            </h3>
+            <p className="mt-1 font-mono text-[11px] text-primary">{selected.outName}</p>
+
+            {/* Visual representation */}
+            <div className="my-5 rounded-xl border border-emerald-500/25 bg-background p-4 h-36 flex flex-col justify-center items-center relative shadow-sm">
+              {/* Sparkle background details */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/5 to-cyan-500/5 pointer-events-none" />
+              <div className="text-center space-y-1">
+                <p className="text-2xl font-black text-emerald-500">{selected.outSize}</p>
+                <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider flex items-center justify-center gap-1">
+                  <Zap className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                  {selected.outDetails}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-emerald-500/10 pt-3 text-xs text-muted-foreground flex justify-between items-center">
+            <span>Required Limit: {selected.limit}</span>
+            <span className="font-bold text-emerald-500">Optimized Perfect</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

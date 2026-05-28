@@ -2,7 +2,13 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type AdminCreds = { username: string; passwordHash: string } | null;
-type Settings = { standaloneMode: boolean; editingEnabled: boolean };
+type Settings = { 
+  standaloneMode: boolean; 
+  editingEnabled: boolean;
+  activeOffer?: string;
+  discountPercentage?: number;
+  eventTheme?: "none" | "warm" | "cool" | "tricolor";
+};
 
 const CRED_KEY = "filenova-admin";
 const SETTINGS_KEY = "filenova-settings";
@@ -10,7 +16,13 @@ const SESSION_KEY = "filenova-admin-session";
 const DEFAULT_ADMIN_USERNAME = "subhajitghosh";
 const DEFAULT_ADMIN_PASSWORD = "Subhajit@56";
 
-const defaultSettings: Settings = { standaloneMode: false, editingEnabled: true };
+const defaultSettings: Settings = { 
+  standaloneMode: false, 
+  editingEnabled: true,
+  activeOffer: "",
+  discountPercentage: 0,
+  eventTheme: "none",
+};
 
 const AdminContext = createContext<{
   creds: AdminCreds;

@@ -136,8 +136,51 @@ export default function AdminDashboard() {
                 </label>
               </div>
             </div>
+            
             {admin.isAuthenticated && (
-              <div className="mt-3">
+              <div className="mt-4 border-t border-border pt-3 space-y-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Offers & Events</p>
+                
+                <div>
+                  <label className="block text-xs font-bold text-foreground">Announced Offer</label>
+                  <input 
+                    value={admin.settings.activeOffer || ""} 
+                    onChange={(e) => admin.setSettings({ activeOffer: e.target.value })} 
+                    placeholder="e.g. Flat 50% Off Launch Deal!" 
+                    className="w-full rounded-md border border-border bg-background p-2 text-xs mt-1" 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground">Discount Percentage</label>
+                  <input 
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={admin.settings.discountPercentage || 0} 
+                    onChange={(e) => admin.setSettings({ discountPercentage: Number(e.target.value) })} 
+                    className="w-full rounded-md border border-border bg-background p-2 text-xs mt-1" 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground">Event Theme</label>
+                  <select 
+                    value={admin.settings.eventTheme || "none"} 
+                    onChange={(e) => admin.setSettings({ eventTheme: e.target.value as any })} 
+                    className="w-full rounded-md border border-border bg-background p-2 text-xs mt-1"
+                  >
+                    <option value="none">Standard Theme (Default)</option>
+                    <option value="warm">Warm/Festival (Rose/Gold)</option>
+                    <option value="cool">Cool/Tech (Cyan/Indigo)</option>
+                    <option value="tricolor">Indian Tri-color (Saffron/Green)</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {admin.isAuthenticated && (
+              <div className="mt-4 border-t border-border pt-3">
                 <p className="text-xs font-bold">Change credentials</p>
                 <input value={newUser} onChange={(e) => setNewUser(e.target.value)} placeholder="new username" className="w-full rounded-md border p-2 text-sm mt-2" />
                 <input value={newPass} onChange={(e) => setNewPass(e.target.value)} placeholder="new password" type="password" className="w-full rounded-md border p-2 text-sm mt-2" />

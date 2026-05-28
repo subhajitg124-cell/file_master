@@ -6,12 +6,15 @@
 import React from "react";
 import { Link } from "wouter";
 import { ChevronLeft, Sparkles, CheckCircle2, ShieldCheck, Zap, Loader } from "lucide-react";
-import { useSubscription, type PremiumTier } from "@/hooks/useSubscription";
+import { useSubscription, type PremiumTier, isTestingPeriodActive } from "@/hooks/useSubscription";
+import { TestingNotice } from "@/components/TestingNotice";
+import { useAdmin } from "@/lib/admin";
+import { toast } from "sonner";
 
 interface PlanCardProps {
   id: PremiumTier;
   title: string;
-  price: string;
+  price: React.ReactNode;
   period: string;
   limit: string;
   description: string;
@@ -63,7 +66,7 @@ function PlanCard({
           {description}
         </p>
         <div className="mt-4 flex items-baseline gap-1">
-          <span className="text-3xl font-black text-foreground">{price}</span>
+          {price}
           {period && <span className="text-xs font-semibold text-muted-foreground">/{period}</span>}
         </div>
         <div className="mt-2 text-xs font-bold text-primary">{limit}</div>
@@ -107,13 +110,19 @@ function PlanCard({
 }
 
 export default function PricingPage() {
-  const { premiumTier, startCheckout, cancelSubscription, loading } = useSubscription();
+  const { premiumTier, startCheckout, cancelSubscription, loading, activeOffer } = useSubscription();
+  const admin = useAdmin();
+  const isTesting = isTestingPeriodActive();
+
+  const themeClass = admin.settings.eventTheme && admin.settings.eventTheme !== "none"
+    ? `event-theme-${admin.settings.eventTheme}`
+    : "";
 
   const plans = [
     {
       id: "free" as const,
       title: "Free",
-      price: "₹0",
+      originalPrice: 0,
       period: "",
       limit: "Ad-supported access",
       description: "Ideal for occasional, single-document edits and quick runs.",
@@ -129,7 +138,7 @@ export default function PricingPage() {
     {
       id: "basic" as const,
       title: "Basic Desk",
-      price: "₹19",
+      originalPrice: 19,
       period: "month",
       limit: "20 uses / day",
       description: "Built for individual applicants filling regular local job forms.",
@@ -146,7 +155,7 @@ export default function PricingPage() {
     {
       id: "pro" as const,
       title: "Pro Desk",
-      price: "₹39",
+      originalPrice: 39,
       period: "month",
       limit: "100 uses / day",
       description: "Our best option for high-volume document creators and coordinators.",
@@ -165,7 +174,7 @@ export default function PricingPage() {
     {
       id: "elite" as const,
       title: "Elite Console",
-      price: "₹59",
+      originalPrice: 59,
       period: "month",
       limit: "Unlimited usage",
       description: "Designed for Cyber Cafe owners and student operators handling bulk applications.",
@@ -183,6 +192,10 @@ export default function PricingPage() {
   ];
 
   const handleSelectPlan = (plan: PremiumTier) => {
+    if (isTesting) {
+      toast.info("All plans are currently free during the testing period! Enjoy all premium benefits.");
+      return;
+    }
     if (plan === "free") {
       if (premiumTier !== "free") {
         if (confirm("Are you sure you want to cancel your premium plan? This will return you to the ad-supported free tier.")) {
@@ -194,8 +207,41 @@ export default function PricingPage() {
     startCheckout(plan);
   };
 
+  const getPlanPrice = (planId: PremiumTier, originalPrice: number) => {
+    if (planId === "free") return <span className="text-3xl font-black text-foreground">₹0</span>;
+    
+    if (isTesting) {
+      return (
+        <span className="flex items-baseline gap-1.5">
+          <span className="text-3xl font-black text-emerald-500 animate-pulse-glow">FREE</span>
+          <span className="text-sm text-muted-foreground line-through font-semibold">₹{originalPrice}</span>
+        </span>
+      );
+    }
+
+    if (activeOffer && activeOffer.discountPercentage > 0) {
+      const discounted = Math.round(originalPrice * (1 - activeOffer.discountPercentage / 100));
+      return (
+        <span className="flex items-baseline gap-1.5">
+          <span className="text-3xl font-black text-foreground">₹{discounted}</span>
+          <span className="text-sm text-muted-foreground line-through font-semibold">₹{originalPrice}</span>
+        </span>
+      );
+    }
+
+    return <span className="text-3xl font-black text-foreground">₹{originalPrice}</span>;
+  };
+
+  const getPlanCta = (planId: PremiumTier, defaultCta: string) => {
+    if (isTesting) {
+      return planId === "free" ? "Free Tier" : "Unlocked (Testing)";
+    }
+    return defaultCta;
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className={`min-h-screen bg-background text-foreground flex flex-col bg-mesh ${themeClass}`}>
+      <TestingNotice />
       <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <Link href="/" className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-bold">
@@ -216,6 +262,19 @@ export default function PricingPage() {
             <Zap className="h-3 w-3" />
             Upgrade Workspace
           </div>
+          
+          {activeOffer && !isTesting && (
+            <div className="rounded-2xl bg-indigo-500/10 border border-indigo-500/20 p-4 text-center text-sm font-bold text-primary animate-pulse-glow max-w-xl mx-auto">
+              🎉 {activeOffer.announcement}
+            </div>
+          )}
+
+          {isTesting && (
+            <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-4 text-center text-sm font-bold text-emerald-600 animate-pulse-glow max-w-xl mx-auto">
+              🛠️ Testing Mode: All premium subscriptions are currently unlocked for FREE!
+            </div>
+          )}
+
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight">
             Flexible premium plans for every workspace
           </h1>
@@ -232,14 +291,14 @@ export default function PricingPage() {
               key={p.id}
               id={p.id}
               title={p.title}
-              price={p.price}
+              price={getPlanPrice(p.id, p.originalPrice)}
               period={p.period}
               limit={p.limit}
               description={p.description}
               features={p.features}
               accent={p.accent}
               isPopular={p.isPopular}
-              ctaText={p.ctaText}
+              ctaText={getPlanCta(p.id, p.ctaText)}
               onSelect={() => handleSelectPlan(p.id)}
               currentTier={premiumTier}
               loading={loading}

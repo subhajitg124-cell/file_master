@@ -13,11 +13,19 @@ const getTodayKey = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
+export const TESTING_END_TIME = new Date("2026-05-31T20:58:19+05:30").getTime();
+export const isTestingPeriodActive = () => Date.now() < TESTING_END_TIME;
+
 export function useSubscription() {
   const [loading, setLoading] = useState(false);
-  const [premiumTier, setPremiumTier] = useState<PremiumTier>("free");
-  const [premiumEnabled, setPremiumEnabled] = useState(false);
+  const [premiumTierState, setPremiumTierState] = useState<PremiumTier>("free");
+  const [premiumEnabledState, setPremiumEnabledState] = useState(false);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [activeOffer, setActiveOffer] = useState<{ announcement: string; discountPercentage: number } | null>(null);
+
+  const testingActive = isTestingPeriodActive();
+  const premiumTier = testingActive ? "elite" : premiumTierState;
+  const premiumEnabled = testingActive ? true : premiumEnabledState;
 
   // Local storage usage trackers
   const [adWatchCount, setAdWatchCount] = useState(0);
@@ -35,13 +43,33 @@ export function useSubscription() {
     setUseCount(uses);
   }, [adsKey, usesKey]);
 
+  // Sync active offer from settings (stored in localStorage under "filenova-settings")
+  const syncActiveOffer = useCallback(() => {
+    try {
+      const raw = localStorage.getItem("filenova-settings");
+      if (raw) {
+        const settings = JSON.parse(raw);
+        if (settings.activeOffer && settings.discountPercentage > 0) {
+          setActiveOffer({
+            announcement: settings.activeOffer,
+            discountPercentage: Number(settings.discountPercentage),
+          });
+          return;
+        }
+      }
+      setActiveOffer(null);
+    } catch (_) {
+      setActiveOffer(null);
+    }
+  }, []);
+
   const fetchStatus = useCallback(async () => {
     try {
       const res = await fetch("/api/v1/premium/subscription/status");
       if (res.ok) {
         const data = await res.json();
-        setPremiumTier(data.premiumTier || "free");
-        setPremiumEnabled(data.premiumEnabled || false);
+        setPremiumTierState(data.premiumTier || "free");
+        setPremiumEnabledState(data.premiumEnabled || false);
         setExpiresAt(data.subscription?.expiresAt || null);
       }
     } catch (_) {
@@ -52,10 +80,14 @@ export function useSubscription() {
   useEffect(() => {
     fetchStatus();
     syncLocalMetrics();
+    syncActiveOffer();
     // Periodically update to detect changes
-    const timer = setInterval(syncLocalMetrics, 1000);
+    const timer = setInterval(() => {
+      syncLocalMetrics();
+      syncActiveOffer();
+    }, 1000);
     return () => clearInterval(timer);
-  }, [fetchStatus, syncLocalMetrics]);
+  }, [fetchStatus, syncLocalMetrics, syncActiveOffer]);
 
   // Dynamic script loader for Razorpay
   const loadRazorpayScript = (): Promise<boolean> => {
@@ -84,10 +116,21 @@ export function useSubscription() {
         return;
       }
 
+      let discountPercentage = 0;
+      try {
+        const raw = localStorage.getItem("filenova-settings");
+        if (raw) {
+          const settings = JSON.parse(raw);
+          if (settings.activeOffer && settings.discountPercentage > 0) {
+            discountPercentage = Number(settings.discountPercentage);
+          }
+        }
+      } catch (_) {}
+
       const res = await fetch("/api/v1/premium/subscription/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, discountPercentage }),
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
@@ -203,6 +246,7 @@ export function useSubscription() {
 
   // Max daily limit rules
   const getDailyLimit = (): number => {
+    if (isTestingPeriodActive()) return Infinity;
     if (premiumTier === "basic") return 20;
     if (premiumTier === "pro") return 100;
     if (premiumTier === "elite") return Infinity;
@@ -210,11 +254,13 @@ export function useSubscription() {
   };
 
   const isLimitReached = (): boolean => {
+    if (isTestingPeriodActive()) return false;
     const max = getDailyLimit();
     return useCount >= max;
   };
 
   const shouldShowAdGate = (): boolean => {
+    if (isTestingPeriodActive()) return false;
     if (premiumTier !== "free") return false;
     // FREE user: watch 2 ads per use.
     // Condition: watched ads must be >= (uses + 1) * 2 to run next feature
@@ -229,6 +275,7 @@ export function useSubscription() {
     expiresAt,
     adWatchCount,
     useCount,
+    activeOffer,
     incrementAdWatch,
     incrementFeatureUse,
     startCheckout,
