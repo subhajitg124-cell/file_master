@@ -46,7 +46,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<"overview" | "subscriptions">("overview");
   const [subStats, setSubStats] = useState<any>(null);
   
-  const logoUrl = `${import.meta.env.BASE_URL}logo.svg`;
+  const logoUrl = `${import.meta.env.BASE_URL}logo.png`;
 
   useEffect(() => {
     const headers: Record<string, string> = {};
