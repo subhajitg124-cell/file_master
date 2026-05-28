@@ -259,7 +259,7 @@ export default function PremiumSuite() {
                 </div>
               ))}
             </div>
-          </div>          <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+          </div>          <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
             <div className="rounded-2xl border border-border bg-card p-5 shadow-premium">
               {active === "aadhaar" ? (
                 <FeatureGate requiredPlan="basic" featureName="Aadhaar Masking">

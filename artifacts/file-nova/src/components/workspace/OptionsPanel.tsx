@@ -169,7 +169,7 @@ const AnnotationRow: React.FC<AnnotationRowProps> = ({ ann, idx, onChange, onRem
       </button>
       {expanded && (
         <div className="p-3 space-y-3 bg-card/50">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {(['text', 'cover', 'replace'] as const).map(t => (
               <button key={t} onClick={() => onChange(ann.id, { type: t })}
                 className={`py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${ann.type === t ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground hover:border-primary/40'}`}>
@@ -195,7 +195,7 @@ const AnnotationRow: React.FC<AnnotationRowProps> = ({ ann, idx, onChange, onRem
             )}
           </div>
           <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Position &amp; Size (points from top-left)</p>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {([['X', 'x'], ['Y (top)', 'y'], ['Width', 'width'], ['Height', 'height']] as [string, keyof PdfAnnotation][]).map(([lbl, key]) => (
               <div key={key} className="space-y-1">
                 <label className="text-[9px] text-muted-foreground">{lbl}</label>
@@ -260,7 +260,7 @@ const RedactRow: React.FC<RedactRowProps> = ({ area, idx, onChange, onRemove }) 
         </div>
       </div>
     </div>
-    <div className="grid grid-cols-4 gap-2">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
       {([['X', 'x'], ['Y (top)', 'y'], ['W', 'width'], ['H', 'height']] as [string, keyof RedactArea][]).map(([lbl, key]) => (
         <div key={key} className="space-y-1">
           <label className="text-[9px] text-muted-foreground">{lbl}</label>
@@ -824,7 +824,7 @@ export const OptionsPanel: React.FC = () => {
           </div>
         )}
       </div>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <NumInput label="Page #" value={operationOptions.sign_page || 1} min={1} onChange={(v) => updateOptions({ sign_page: v })} />
         <NumInput label="X position (pt)" value={operationOptions.sign_x || 60} min={0} onChange={(v) => updateOptions({ sign_x: v })} />
         <NumInput label="Y from top (pt)" value={operationOptions.sign_y || 80} min={0} onChange={(v) => updateOptions({ sign_y: v })} />
@@ -1003,7 +1003,7 @@ export const OptionsPanel: React.FC = () => {
       <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs text-amber-400 leading-relaxed">
         PDF coordinates start from the <strong>bottom-left</strong> corner in points (1 pt ≈ 0.353 mm). A4 = 595 × 842 pts, US Letter = 612 × 792 pts.
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <NumInput label="X (left offset, pt)" value={operationOptions.pdf_crop_x || 0} min={0} onChange={(v) => updateOptions({ pdf_crop_x: v })} />
         <NumInput label="Y (bottom offset, pt)" value={operationOptions.pdf_crop_y || 0} min={0} onChange={(v) => updateOptions({ pdf_crop_y: v })} />
         <NumInput label="Crop width (pt)" value={operationOptions.pdf_crop_w || 595} min={1} onChange={(v) => updateOptions({ pdf_crop_w: v })} />
@@ -1081,7 +1081,7 @@ export const OptionsPanel: React.FC = () => {
       <PresetRow label="Position" value={operationOptions.page_num_position || 'bottom-center'}
         onChange={(v) => updateOptions({ page_num_position: v })}
         options={[ { value: 'bottom-center', label: 'Bottom center' }, { value: 'bottom-right', label: 'Bottom right' }, { value: 'bottom-left', label: 'Bottom left' }, { value: 'top-center', label: 'Top center' } ]} />
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <NumInput label="Start from" value={operationOptions.page_num_start || 1} min={0} onChange={(v) => updateOptions({ page_num_start: v })} />
         <TextField label="Prefix" value={operationOptions.page_num_prefix || ''} placeholder="Page " onChange={(v) => updateOptions({ page_num_prefix: v })} />
         <TextField label="Suffix" value={operationOptions.page_num_suffix || ''} placeholder=" / N" onChange={(v) => updateOptions({ page_num_suffix: v })} />
@@ -1106,7 +1106,7 @@ export const OptionsPanel: React.FC = () => {
       <PresetRow label="Aspect ratio" value=""
         onChange={(v) => { if (!naturalDims) return; const [rw, rh] = (v as string).split(':').map(Number); const maxW = naturalDims.width, maxH = naturalDims.height; let w = maxW, h = Math.round(maxW * rh / rw); if (h > maxH) { h = maxH; w = Math.round(maxH * rw / rh); } updateOptions({ crop_x: Math.round((maxW - w) / 2), crop_y: Math.round((maxH - h) / 2), crop_width: w, crop_height: h }); }}
         options={[ { value: '1:1', label: '1:1' }, { value: '16:9', label: '16:9' }, { value: '4:3', label: '4:3' }, { value: '3:2', label: '3:2' }, { value: '2:3', label: '2:3' } ]} />
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <NumInput label="X offset (px)" value={operationOptions.crop_x || 0} min={0} max={naturalDims?.width} onChange={(v) => updateOptions({ crop_x: v })} />
         <NumInput label="Y offset (px)" value={operationOptions.crop_y || 0} min={0} max={naturalDims?.height} onChange={(v) => updateOptions({ crop_y: v })} />
         <NumInput label="Width (px)" value={operationOptions.crop_width || naturalDims?.width || 800} min={1} max={naturalDims?.width} onChange={(v) => updateOptions({ crop_width: v })} />
@@ -1247,7 +1247,7 @@ export const OptionsPanel: React.FC = () => {
       <PresetRow label="Common sizes" value=""
         onChange={(v) => { const [w, h] = (v as string).split('x').map(Number); updateOptions({ resize_width: w, resize_height: h, resize_lock_aspect: false }); }}
         options={[ { value: '1920x1080', label: '1080p' }, { value: '1280x720', label: '720p' }, { value: '800x600', label: '800×600' }, { value: '512x512', label: '512²' }, { value: '256x256', label: '256²' } ]} />
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <NumInput label="Width (px)" value={operationOptions.resize_width || 800} min={1} max={8000} onChange={handleResizeWidth} />
         <NumInput label="Height (px)" value={operationOptions.resize_height || 600} min={1} max={8000} onChange={handleResizeHeight} />
       </div>
@@ -1285,7 +1285,7 @@ export const OptionsPanel: React.FC = () => {
         <PresetRow label="Resolution" value={`${operationOptions.svg_width || 512}x${operationOptions.svg_height || 512}`}
           onChange={(v) => { const [w, h] = (v as string).split('x').map(Number); updateOptions({ svg_width: w, svg_height: h }); }}
           options={[ { value: '256x256', label: '256²' }, { value: '512x512', label: '512²' }, { value: '1024x1024', label: '1024²' }, { value: '1920x1080', label: '1080p' } ]} />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <NumInput label="Width (px)" value={operationOptions.svg_width || 512} min={1} max={4096} onChange={(v) => updateOptions({ svg_width: v })} />
           <NumInput label="Height (px)" value={operationOptions.svg_height || 512} min={1} max={4096} onChange={(v) => updateOptions({ svg_height: v })} />
         </div>
@@ -1361,7 +1361,7 @@ export const OptionsPanel: React.FC = () => {
     if (actionName === 'video_to_audio') return <SelectField id="audio-fmt-ex" label="Audio Format" value={operationOptions.audio_format || 'mp3'} options={[ { value: 'mp3', label: 'MP3' }, { value: 'aac', label: 'AAC' }, { value: 'wav', label: 'WAV' } ]} onChange={(v) => updateOptions({ audio_format: v })} />;
     if (actionName === 'video_to_gif') return (
       <div className="space-y-5">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <NumInput label="Start (s)" value={operationOptions.start_time || 0} min={0} onChange={(v) => updateOptions({ start_time: v })} />
           <NumInput label="End (s)" value={operationOptions.end_time || 5} min={1} onChange={(v) => updateOptions({ end_time: v })} />
         </div>
@@ -1408,7 +1408,7 @@ export const OptionsPanel: React.FC = () => {
                     className="w-full p-2 bg-card border border-border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40" />
                 </div>
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {([['X', 'x'], ['Y (top)', 'y'], ['W', 'width'], ['H', 'height']] as [string, keyof PdfLink][]).map(([lbl, key]) => (
                   <div key={key} className="space-y-1">
                     <label className="text-[9px] text-muted-foreground">{lbl}</label>
@@ -1491,7 +1491,7 @@ export const OptionsPanel: React.FC = () => {
                 <NumInput label="Page #" value={img.page} min={1} onChange={(v) => updateImgEntry(img.id, { page: v })} />
                 <div />
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {([['X', 'x'], ['Y (top)', 'y'], ['W', 'width'], ['H', 'height']] as [string, string][]).map(([lbl, key]) => (
                   <div key={key} className="space-y-1">
                     <label className="text-[9px] text-muted-foreground">{lbl}</label>
@@ -1554,7 +1554,7 @@ export const OptionsPanel: React.FC = () => {
                     <Minus className="h-3 w-3" />
                   </button>
                 </div>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                   {(['rectangle', 'ellipse', 'line', 'arrow'] as const).map((t) => (
                     <button key={t} onClick={() => updateShape(shape.id, { type: t })}
                       className={`py-1.5 rounded-lg text-[10px] font-semibold border transition-all ${shape.type === t ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground hover:border-primary/40'}`}>
@@ -1567,7 +1567,7 @@ export const OptionsPanel: React.FC = () => {
                   <NumInput label="Stroke width" value={shape.strokeWidth ?? 2} min={1} max={20} onChange={(v) => updateShape(shape.id, { strokeWidth: v })} />
                 </div>
                 {lineMode ? (
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {([['X1', 'x'], ['Y1', 'y'], ['X2', 'x2'], ['Y2', 'y2']] as [string, keyof PdfShape][]).map(([lbl, key]) => (
                       <div key={key} className="space-y-1">
                         <label className="text-[9px] text-muted-foreground">{lbl}</label>
@@ -1578,7 +1578,7 @@ export const OptionsPanel: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {([['X', 'x'], ['Y (top)', 'y'], ['W', 'width'], ['H', 'height']] as [string, keyof PdfShape][]).map(([lbl, key]) => (
                       <div key={key} className="space-y-1">
                         <label className="text-[9px] text-muted-foreground">{lbl}</label>
@@ -1680,7 +1680,7 @@ export const OptionsPanel: React.FC = () => {
       {(allDocx || rawFiles.length === 0) && (
         <div className="space-y-2">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Output format (DOCX input)</span>
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {[
               { value: 'docx', label: 'Word Document', sub: '.docx — stay editable', icon: '📄' },
               { value: 'pdf',  label: 'PDF',            sub: '.pdf — universal format', icon: '📕' },
@@ -1777,7 +1777,7 @@ export const OptionsPanel: React.FC = () => {
       case 'pdf_insert_shape':   return renderPdfInsertShapeOptions();
       case 'trim':             return (
         <div className="space-y-5">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <NumInput label="Start (seconds)" value={operationOptions.start_time || 0} min={0} onChange={(v) => updateOptions({ start_time: v })} />
             <NumInput label="End (seconds)" value={operationOptions.end_time || 10} min={1} onChange={(v) => updateOptions({ end_time: v })} />
           </div>

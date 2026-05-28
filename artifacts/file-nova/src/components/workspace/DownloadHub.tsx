@@ -160,18 +160,18 @@ export const DownloadHub: React.FC = () => {
             )}
 
             {savings && savings.percent > 0 && (
-              <div className="grid grid-cols-3 gap-2 p-3.5 bg-muted/40 border border-border rounded-xl text-sm">
+              <div className="grid grid-cols-3 gap-1.5 p-3 bg-muted/40 border border-border rounded-xl text-xs sm:text-sm">
                 <div className="text-left space-y-0.5">
-                  <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider block">Before</span>
-                  <span className="font-bold text-foreground">{formatSize(savings.originalSize)}</span>
+                  <span className="text-[9px] sm:text-[10px] text-muted-foreground font-semibold uppercase tracking-wider block">Before</span>
+                  <span className="font-bold text-foreground truncate block">{formatSize(savings.originalSize)}</span>
                 </div>
-                <div className="text-center space-y-0.5 border-x border-border">
-                  <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider block">After</span>
-                  <span className="font-bold text-foreground">{formatSize(savings.newSize)}</span>
+                <div className="text-center space-y-0.5 border-x border-border px-1">
+                  <span className="text-[9px] sm:text-[10px] text-muted-foreground font-semibold uppercase tracking-wider block">After</span>
+                  <span className="font-bold text-foreground truncate block">{formatSize(savings.newSize)}</span>
                 </div>
                 <div className="text-right space-y-0.5">
-                  <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider block">Saved</span>
-                  <span className="font-bold text-emerald-500">-{savings.percent}%</span>
+                  <span className="text-[9px] sm:text-[10px] text-muted-foreground font-semibold uppercase tracking-wider block">Saved</span>
+                  <span className="font-bold text-emerald-500 block">-{savings.percent}%</span>
                 </div>
               </div>
             )}

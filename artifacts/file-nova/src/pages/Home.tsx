@@ -120,16 +120,33 @@ export default function Home() {
   const openQuickAction = (category: string, action: string) => {
     clearStore();
     setSelectedSection(category as "pdf" | "image" | "office" | "video");
-    if (action === "compress") setOperation("compress");
-    if (action === "enhance") setOperation("enhance");
-    if (action === "ocr") {
+    if (action === "compress") {
+      setOperation("compress");
+    } else if (action === "enhance") {
+      setOperation("enhance");
+    } else if (action === "ocr") {
       setOperation("edit");
       updateOptions({ operation: "pdf_ocr" });
+    } else if (action === "aadhaar") {
+      setOperation("resize");
+      updateOptions({ operation: "resize", resizeType: "dimensions", width: 856, height: 540 });
+    } else if (action === "signature") {
+      setOperation("resize");
+      updateOptions({ operation: "resize", resizeType: "dimensions", width: 280, height: 80 });
+    } else if (action === "photo") {
+      setOperation("resize");
+      updateOptions({ operation: "resize", resizeType: "dimensions", width: 200, height: 230 });
+    } else if (action === "zip") {
+      setOperation("convert");
+      updateOptions({ operation: "html_to_zip" });
     }
+    setTimeout(() => {
+      document.getElementById("upload-section")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground bg-mesh">
       <header className="sticky top-0 z-50 border-b border-border bg-background/82 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
@@ -145,7 +162,7 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 rounded-xl border border-border bg-card/60 p-1">
+            <div className="hidden md:flex items-center gap-2 rounded-xl border border-border bg-card/60 p-1">
               {(["en", "bn", "hi"] as AppLanguage[]).map((code) => (
                 <button
                   key={code}
@@ -157,7 +174,7 @@ export default function Home() {
               ))}
             </div>
 
-            <div className="hidden sm:flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-2">
               <Link href="/admin" className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-bold text-muted-foreground hover:text-foreground">
                 <LayoutDashboard className="h-4 w-4" />
                 {t.admin}
@@ -179,14 +196,14 @@ export default function Home() {
               </button>
             </div>
 
-            <button onClick={() => setMobileMenuOpen((v) => !v)} className="sm:hidden inline-flex items-center justify-center h-9 w-9 rounded-lg border border-border bg-card text-muted-foreground">
+            <button onClick={() => setMobileMenuOpen((v) => !v)} className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-lg border border-border bg-card text-muted-foreground">
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
 
         {mobileMenuOpen && (
-          <div className="sm:hidden border-t border-border bg-card/95 px-4 py-3">
+          <div className="md:hidden border-t border-border bg-card/95 px-4 py-3">
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 {(["en", "bn", "hi"] as AppLanguage[]).map((code) => (
@@ -233,110 +250,103 @@ export default function Home() {
 
       <main className="mx-auto max-w-7xl px-4 py-16 sm:py-24">
         {files.length === 0 && (
-          <div className="space-y-8">
-            <section className="grid items-stretch gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-              <motion.div
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="overflow-hidden rounded-2xl border border-border bg-card shadow-premium"
-              >
-                <div className="grid min-h-[520px] gap-0 lg:grid-cols-[1fr_360px]">
-                  <div className="flex flex-col justify-between p-5 sm:p-8 text-center lg:text-left">
-                    <div className="space-y-5">
-                      <div className="inline-flex items-center gap-2 rounded-full border border-soft bg-secondary px-3 py-1.5 text-xs font-bold text-primary mx-auto lg:mx-0">
-                        <ShieldCheck className="h-4 w-4" />
-                        {t.builtFor}
-                      </div>
-                      <div className="space-y-4">
-                        <h1 className="max-w-3xl mx-auto lg:mx-0 text-4xl font-black leading-tight sm:text-5xl md:text-6xl lg:text-6xl">
-                          {t.fixMode}
-                          <span className="block text-primary">{t.logoSubtitle}</span>
-                        </h1>
-                        <p className="max-w-2xl mx-auto lg:mx-0 text-sm leading-7 text-muted-foreground sm:text-base">
-                          {t.assistantCopy} {""}{t.aiRecommendation4}
-                        </p>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                          {automationPillars.map(({ label, value }) => (
-                            <div key={label} className="rounded-2xl border border-soft bg-secondary p-4">
-                              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{label}</p>
-                              <p className="mt-3 text-lg font-black text-foreground">{value}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-3">
-                        <button onClick={startFixMode} disabled={!admin.settings.editingEnabled} className={`inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black transition ${admin.settings.editingEnabled ? 'bg-primary text-primary-foreground shadow-soft' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}>
-                          <Sparkles className="h-4 w-4" />
-                          {t.startOneClick}
-                        </button>
-                        <button onClick={() => setSelectedSection("pdf")} className="inline-flex items-center gap-2 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-bold text-foreground transition hover:border-primary/30 hover:bg-secondary">
-                          <FileArchive className="h-4 w-4 text-primary" />
-                          {t.openTools}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-8 grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                      {automationPillars.map(({ label, value, icon: Icon }) => (
-                        <div key={label} className="rounded-xl border border-border bg-background/70 p-3 animate-fade-up transition-transform hover:-translate-y-1">
-                          <Icon className="h-4 w-4 text-primary" />
-                          <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
-                          <p className="text-sm font-black">{value}</p>
-                        </div>
-                      ))}
-                    </div>
+          <div className="space-y-8 animate-fade-in">
+            {/* Row 1: Hero Banner */}
+            <section className="relative overflow-hidden rounded-3xl border border-border bg-card/60 glass shadow-premium p-8 sm:p-12 card-shine animated-lines-bg">
+              <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] items-center">
+                <div className="space-y-6 text-center lg:text-left">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-soft bg-secondary px-3 py-1.5 text-xs font-bold text-primary mx-auto lg:mx-0">
+                    <ShieldCheck className="h-4 w-4" />
+                    {t.builtFor}
                   </div>
-
-                  <div className="border-t border-border bg-muted/30 p-4 lg:border-l lg:border-t-0">
-                    <div className="rounded-xl border border-border bg-card p-4">
-                      <div className="mb-4 flex items-center justify-between">
-                        <div>
-                          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">{t.assistantTitle}</p>
-                          <h2 className="text-lg font-black">{selectedRule.title}</h2>
-                        </div>
-                        <Bot className="h-7 w-7 text-primary" />
-                      </div>
-                      <div className="space-y-3">
-                        {selectedRule.documents.slice(0, 5).map((doc, index) => (
-                          <div key={doc.id} className="flex items-start gap-3 rounded-lg border border-border bg-background/70 p-3">
-                            <div className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black ${index < files.length ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground"}`}>
-                              {index < files.length ? <CheckCircle2 className="h-4 w-4" /> : index + 1}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-bold">{doc.label}</p>
-                              <p className="text-xs text-muted-foreground">{doc.target}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-4 rounded-xl bg-background p-3">
-                        <div className="mb-2 flex items-center justify-between text-xs font-bold">
-                          <span>Readiness score</span>
-                          <span>{completion}%</span>
-                        </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-muted">
-                          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${completion}%` }} />
-                        </div>
-                      </div>
-                    </div>
+                  <h1 className="text-4xl font-black leading-tight sm:text-5xl md:text-6xl">
+                    <span className="gradient-text">{t.fixMode}</span>
+                    <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-400 to-cyan-400 mt-2">{t.logoSubtitle}</span>
+                  </h1>
+                  <p className="text-sm leading-7 text-muted-foreground sm:text-base max-w-2xl mx-auto lg:mx-0">
+                    {t.assistantCopy} {t.aiRecommendation4}
+                  </p>
+                  <div className="flex flex-wrap justify-center lg:justify-start gap-4">
+                    <button onClick={startFixMode} disabled={!admin.settings.editingEnabled} className={`inline-flex items-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-black transition duration-300 transform hover:-translate-y-1 ${admin.settings.editingEnabled ? 'bg-primary text-primary-foreground shadow-soft shadow-glow' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}>
+                      <Sparkles className="h-4 w-4" />
+                      {t.startOneClick}
+                    </button>
+                    <button onClick={() => {
+                      document.getElementById("tools-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }} className="inline-flex items-center gap-2 rounded-2xl border border-border bg-card px-6 py-3.5 text-sm font-bold text-foreground transition duration-300 transform hover:-translate-y-1 hover:border-primary/40 hover:bg-secondary">
+                      <FileArchive className="h-4 w-4 text-primary" />
+                      {t.openTools}
+                    </button>
                   </div>
                 </div>
-              </motion.div>
 
-              <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="space-y-4">
-                <div className="rounded-2xl border border-border bg-card p-4 shadow-panel">
+                {/* Right side benefits illustration/pillars */}
+                <div className="grid gap-3 grid-cols-2">
+                  {automationPillars.map(({ label, value, icon: Icon }) => (
+                    <div key={label} className="rounded-2xl border border-border bg-card/75 p-4 shadow-soft transition-transform hover:-translate-y-1 duration-300">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary mb-3">
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+                      <p className="text-sm font-black mt-1 text-foreground">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* Row 2: Assistant & Upload dropzone */}
+            <section className="grid items-stretch gap-6 grid-cols-1 lg:grid-cols-12">
+              {/* Left: Smart Government Assistant checklist */}
+              <div className="rounded-2xl border border-border bg-card shadow-premium glass lg:col-span-7 xl:col-span-8 p-6 sm:p-8 card-shine">
+                <div className="mb-6 flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">{t.assistantTitle}</p>
+                    <h2 className="text-xl font-black">{selectedRule.title}</h2>
+                  </div>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    <Bot className="h-6 w-6" />
+                  </div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {selectedRule.documents.map((doc, index) => (
+                    <div key={doc.id} className="flex items-start gap-3 rounded-xl border border-border bg-background/50 p-4 transition-all hover:border-primary/30">
+                      <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${index < files.length ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground"}`}>
+                        {index < files.length ? <CheckCircle2 className="h-4 w-4" /> : index + 1}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-foreground">{doc.label}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{doc.target}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6 rounded-xl bg-background/60 p-4 border border-border/50">
+                  <div className="mb-2 flex items-center justify-between text-xs font-bold">
+                    <span>Readiness score</span>
+                    <span>{completion}%</span>
+                  </div>
+                  <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${completion}%` }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Upload documents dropzone & AI recommendations */}
+              <div id="upload-section" className="space-y-4 lg:col-span-5 xl:col-span-4">
+                <div className="rounded-2xl border border-border bg-card/60 glass p-5 shadow-panel card-shine">
                   <div className="mb-3 flex items-center gap-2">
                     <Upload className="h-4 w-4 text-primary" />
                     <h2 className="font-black">{t.upload}</h2>
                   </div>
                   <UploadZone allowedCategory={selectedSection} />
                 </div>
-                <div className="rounded-2xl border border-border bg-card p-4 shadow-panel">
+                <div className="rounded-2xl border border-border bg-card/60 glass p-5 shadow-panel card-shine">
                   <h2 className="mb-4 text-lg font-black">{t.aiRecommendationsTitle}</h2>
                   <div className="space-y-3">
                     {[t.aiRecommendation1, t.aiRecommendation2, t.aiRecommendation3, t.aiRecommendation4].map((item) => (
-                      <div key={item} className="flex items-start gap-3 rounded-2xl border border-soft bg-secondary p-4 text-sm">
-                        <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                      <div key={item} className="flex items-start gap-3 rounded-2xl border border-soft bg-secondary/50 p-4 text-sm hover:border-primary/20 transition-colors">
+                        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                           <Zap className="h-4 w-4" />
                         </div>
                         <span className="text-foreground">{item}</span>
@@ -344,7 +354,7 @@ export default function Home() {
                     ))}
                   </div>
                 </div>
-              </motion.div>
+              </div>
             </section>
 
             <section className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
@@ -356,15 +366,24 @@ export default function Home() {
                   </div>
                   <Globe2 className="h-5 w-5 text-primary" />
                 </div>
-                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                   {eventRules.map((rule) => {
                     const Icon = rule.icon;
                     const active = selectedRule.id === rule.id;
                       return (
                       <button
                         key={rule.id}
-                        onClick={() => setSelectedRuleId(rule.id)}
-                        className={`group rounded-2xl border p-4 text-left transition ${active ? "border-primary bg-secondary shadow-soft" : "border-border bg-card hover:border-primary/30"}`}
+                        onClick={() => {
+                          setSelectedRuleId(rule.id);
+                          setTimeout(() => {
+                            document.getElementById("upload-section")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                          }, 100);
+                        }}
+                        className={`group rounded-2xl border p-4 text-left transition duration-300 transform hover:-translate-y-1 ${
+                          active
+                            ? "border-primary bg-secondary/80 shadow-soft shadow-glow-sm"
+                            : "border-border bg-card hover:border-primary/45 hover:shadow-soft"
+                        }`}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card">
@@ -393,12 +412,12 @@ export default function Home() {
                     </div>
                     <Gauge className="h-5 w-5 text-primary" />
                   </div>
-                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
                     {quickActions.map(({ label, icon: Icon, category, action }) => (
                       <button
                         key={label}
                         onClick={() => openQuickAction(category, action)}
-                          className="group flex items-center justify-between rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/30 hover:bg-secondary"
+                        className="group flex items-center justify-between rounded-2xl border border-border bg-card/60 glass p-4 text-left transition duration-300 transform hover:-translate-y-0.5 hover:border-primary/40 hover:bg-secondary card-shine"
                       >
                         <span className="flex items-center gap-3 text-sm font-bold">
                           <Icon className="h-5 w-5 text-primary" />
@@ -410,13 +429,13 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                   {[
                     ["PWA mobile", "Offline basics + low-network uploads", Languages],
                     ["Secure queue", "Rate limit, scan hooks, encryption", Lock],
                     ["Download center", "History, resumed uploads, batch ZIP", Download],
                   ].map(([title, copy, Icon]) => (
-                    <div key={title as string} className="rounded-xl border border-border bg-card p-4">
+                    <div key={title as string} className="rounded-xl border border-border bg-card/60 glass p-4 transition duration-300 hover:border-primary/30 card-shine">
                       {React.createElement(Icon as typeof Download, { className: "h-5 w-5 text-primary" })}
                       <p className="mt-4 text-sm font-black">{title as string}</p>
                       <p className="mt-1 text-xs leading-5 text-muted-foreground">{copy as string}</p>
@@ -426,7 +445,7 @@ export default function Home() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <section id="tools-section" className="rounded-2xl border border-border bg-card/60 glass p-6 shadow-premium card-shine mt-8">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Advanced file tools</p>
