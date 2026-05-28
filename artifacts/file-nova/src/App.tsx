@@ -4,6 +4,7 @@ import { LazyMotion, domAnimation } from "framer-motion";
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import Home from "@/pages/Home";
 import AdminDashboard from "@/pages/AdminDashboard";
+import PremiumSuite from "@/pages/PremiumSuite";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -63,6 +64,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/premium" component={PremiumSuite} />
       <Route path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>

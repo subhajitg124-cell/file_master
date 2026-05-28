@@ -146,6 +146,10 @@ export default function Home() {
               <LayoutDashboard className="h-4 w-4" />
               {t.admin}
             </Link>
+            <Link href="/premium" className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-bold text-primary">
+              <Sparkles className="h-4 w-4" />
+              Premium
+            </Link>
             <button
               onClick={() => setTheme((value) => (value === "dark" ? "light" : "dark"))}
               className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground"

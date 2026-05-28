@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Download, CheckCircle, Copy, Check, RotateCcw, AlertTriangle, FileText, FileType, Pencil, Eye } from 'lucide-react';
 import { useFileStore } from '@/store/useFileStore';
 import { PdfResultPreview } from './PdfResultPreview';
+import { QuickShareButton } from '@/components/WhatsAppShare';
 
 const getDefaultFilename = (operation: string, format?: string): string => {
   switch (operation) {
@@ -247,6 +248,10 @@ export const DownloadHub: React.FC = () => {
                 {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
                 {copied ? 'Link copied!' : 'Copy shareable link'}
               </button>
+              <QuickShareButton
+                documentId="latest-output"
+                documentName={customFilename.trim() || getDefaultFilename(operation, format)}
+              />
             </div>
           </div>
         )}
