@@ -43,13 +43,19 @@ export default function AdminDashboard() {
   const [formPass, setFormPass] = useState("");
   const [newUser, setNewUser] = useState("");
   const [newPass, setNewPass] = useState("");
+  const logoUrl = `${import.meta.env.BASE_URL}logo.svg`;
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">FileNova AI Console</p>
-            <h1 className="text-xl font-black">Super Admin Dashboard</h1>
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-card border border-border">
+              <img src={logoUrl} alt="FileNova logo" className="h-10 w-auto" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">FileNova AI Console</p>
+              <h1 className="text-xl font-black">Super Admin Dashboard</h1>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Link href="/" className="rounded-lg border border-border bg-card px-3 py-2 text-xs font-bold text-muted-foreground hover:text-foreground">
@@ -82,6 +88,7 @@ export default function AdminDashboard() {
                 <input value={formUser} onChange={(e) => setFormUser(e.target.value)} placeholder="username" className="w-full rounded-md border p-2 text-sm" />
                 <input value={formPass} onChange={(e) => setFormPass(e.target.value)} placeholder="password" type="password" className="w-full rounded-md border p-2 text-sm" />
                 <button onClick={() => { const ok = admin.login(formUser, formPass); if (ok) setLoggedIn(true); else alert("Invalid credentials"); }} className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-sm font-bold text-primary-foreground">Sign in</button>
+                <p className="text-xs text-muted-foreground">Default login: <span className="font-semibold">subhajitghosh / Subhajit@56</span></p>
               </div>
             )}
 

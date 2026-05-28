@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 200" role="img" aria-label="FileNova logo">
+  <defs>
+    <linearGradient id="gn" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#203d72" />
+      <stop offset="45%" stop-color="#5b73c3" />
+      <stop offset="100%" stop-color="#8a3ec7" />
+    </linearGradient>
+    <linearGradient id="star" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6dd5ed" />
+      <stop offset="100%" stop-color="#1bc8f5" />
+    </linearGradient>
+  </defs>
+  <rect width="220" height="200" rx="32" fill="transparent" />
+  <path d="M26 46h46v32h-26v34h26v32H26V46Zm96 90V46h26l34 54v42h-26v-36l-20-32h-14Zm-14-44h-30v84h-24V46h54v46Z" fill="url(#gn)"/>
+  <path d="M192 34c-10 0-18 8-18 18s8 18 18 18 18-8 18-18-8-18-18-18Zm-6 34.5 3.5 10.5 3.5-10.5 10.5-3.5-10.5-3.5-3.5-10.5-3.5 10.5-10.5 3.5 10.5 3.5Z" fill="url(#star)" />
+</svg>

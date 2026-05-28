@@ -66,6 +66,7 @@ export default function Home() {
   const { language, setLanguage } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedRuleId, setSelectedRuleId] = useState(eventRules[0].id);
+  const logoUrl = `${import.meta.env.BASE_URL}logo.svg`;
 
   const selectedRule = useMemo(
     () => eventRules.find((rule) => rule.id === selectedRuleId) || eventRules[0],
@@ -121,8 +122,8 @@ export default function Home() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
             <button onClick={startFixMode} className="flex items-center gap-3 text-left">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-glow">
-                <WandSparkles className="h-5 w-5" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-card border border-border">
+                <img src={logoUrl} alt="FileNova logo" className="h-8 w-auto" />
               </div>
               <div className="hidden sm:block">
                 <p className="text-base font-black leading-none">{t.logoTitle}</p>
@@ -222,25 +223,33 @@ export default function Home() {
                 <div className="grid min-h-[520px] gap-0 lg:grid-cols-[1fr_360px]">
                   <div className="flex flex-col justify-between p-5 sm:p-8 text-center lg:text-left">
                     <div className="space-y-5">
-                      <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-500 mx-auto lg:mx-0">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-soft bg-secondary px-3 py-1.5 text-xs font-bold text-primary mx-auto lg:mx-0">
                         <ShieldCheck className="h-4 w-4" />
                         {t.builtFor}
                       </div>
                       <div className="space-y-4">
                         <h1 className="max-w-3xl mx-auto lg:mx-0 text-4xl font-black leading-tight sm:text-5xl md:text-6xl lg:text-6xl">
                           {t.fixMode}
-                          <span className="block gradient-text">{t.logoSubtitle}</span>
+                          <span className="block text-primary">{t.logoSubtitle}</span>
                         </h1>
                         <p className="max-w-2xl mx-auto lg:mx-0 text-sm leading-7 text-muted-foreground sm:text-base">
                           {t.assistantCopy} {""}{t.aiRecommendation4}
                         </p>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {automationPillars.map(({ label, value }) => (
+                            <div key={label} className="rounded-2xl border border-soft bg-secondary p-4">
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{label}</p>
+                              <p className="mt-3 text-lg font-black text-foreground">{value}</p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <button onClick={startFixMode} disabled={!admin.settings.editingEnabled} className={`inline-flex items-center gap-2 rounded-xl ${admin.settings.editingEnabled ? 'bg-primary text-primary-foreground shadow-glow' : 'bg-muted text-muted-foreground cursor-not-allowed'} px-4 py-3 text-sm font-black`}>
+                      <div className="flex flex-wrap gap-3">
+                        <button onClick={startFixMode} disabled={!admin.settings.editingEnabled} className={`inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black transition ${admin.settings.editingEnabled ? 'bg-primary text-primary-foreground shadow-soft' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}>
                           <Sparkles className="h-4 w-4" />
                           {t.startOneClick}
                         </button>
-                        <button onClick={() => setSelectedSection("pdf")} className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-black">
+                        <button onClick={() => setSelectedSection("pdf")} className="inline-flex items-center gap-2 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-bold text-foreground transition hover:border-primary/30 hover:bg-secondary">
                           <FileArchive className="h-4 w-4 text-primary" />
                           {t.openTools}
                         </button>
@@ -295,21 +304,25 @@ export default function Home() {
               </motion.div>
 
               <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="space-y-4">
-                <div className="rounded-2xl border border-border bg-card p-4 shadow-premium">
+                <div className="rounded-2xl border border-border bg-card p-4 shadow-panel">
                   <div className="mb-3 flex items-center gap-2">
                     <Upload className="h-4 w-4 text-primary" />
                     <h2 className="font-black">{t.upload}</h2>
                   </div>
                   <UploadZone allowedCategory={selectedSection} />
                 </div>
-                <div className="rounded-2xl border border-border bg-card p-4">
-                  <h2 className="mb-3 font-black">{t.aiRecommendationsTitle}</h2>
-                  {[t.aiRecommendation1, t.aiRecommendation2, t.aiRecommendation3, t.aiRecommendation4].map((item) => (
-                    <div key={item} className="mb-2 flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-sm">
-                      <Zap className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
+                <div className="rounded-2xl border border-border bg-card p-4 shadow-panel">
+                  <h2 className="mb-4 text-lg font-black">{t.aiRecommendationsTitle}</h2>
+                  <div className="space-y-3">
+                    {[t.aiRecommendation1, t.aiRecommendation2, t.aiRecommendation3, t.aiRecommendation4].map((item) => (
+                      <div key={item} className="flex items-start gap-3 rounded-2xl border border-soft bg-secondary p-4 text-sm">
+                        <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                          <Zap className="h-4 w-4" />
+                        </div>
+                        <span className="text-foreground">{item}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </motion.div>
             </section>
@@ -331,7 +344,7 @@ export default function Home() {
                       <button
                         key={rule.id}
                         onClick={() => setSelectedRuleId(rule.id)}
-                        className={`group rounded-xl border p-4 text-left transition transform hover:-translate-y-1 ${active ? "border-primary bg-primary/8 shadow-glow-sm" : "border-border bg-background/70 hover:border-primary/30"}`}
+                        className={`group rounded-2xl border p-4 text-left transition ${active ? "border-primary bg-secondary shadow-soft" : "border-border bg-card hover:border-primary/30"}`}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card">
@@ -365,7 +378,7 @@ export default function Home() {
                       <button
                         key={label}
                         onClick={() => openQuickAction(category, action)}
-                          className="group flex items-center justify-between rounded-xl border border-border bg-background/70 p-3 text-left transition transform hover:-translate-y-1 hover:border-primary/30 hover:bg-muted/50"
+                          className="group flex items-center justify-between rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/30 hover:bg-secondary"
                       >
                         <span className="flex items-center gap-3 text-sm font-bold">
                           <Icon className="h-5 w-5 text-primary" />

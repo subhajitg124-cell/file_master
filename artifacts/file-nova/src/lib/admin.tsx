@@ -5,6 +5,8 @@ type Settings = { standaloneMode: boolean; editingEnabled: boolean };
 
 const CRED_KEY = "filenova-admin";
 const SETTINGS_KEY = "filenova-settings";
+const DEFAULT_ADMIN_USERNAME = "subhajitghosh";
+const DEFAULT_ADMIN_PASSWORD = "Subhajit@56";
 
 const defaultSettings: Settings = { standaloneMode: false, editingEnabled: true };
 
@@ -18,12 +20,25 @@ const AdminContext = createContext<{
 } | null>(null);
 
 export function AdminProvider({ children }: { children: React.ReactNode }) {
+  const hash = (s: string) => {
+    try {
+      return btoa(unescape(encodeURIComponent(s)));
+    } catch (e) {
+      return s;
+    }
+  };
+
+  const defaultCreds: AdminCreds = {
+    username: DEFAULT_ADMIN_USERNAME,
+    passwordHash: hash(DEFAULT_ADMIN_PASSWORD),
+  };
+
   const [creds, setCreds] = useState<AdminCreds>(() => {
     try {
       const raw = localStorage.getItem(CRED_KEY);
-      return raw ? JSON.parse(raw) : null;
+      return raw ? JSON.parse(raw) : defaultCreds;
     } catch (e) {
-      return null;
+      return defaultCreds;
     }
   });
 
@@ -48,14 +63,6 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     } catch (e) {}
   }, [settings]);
-
-  const hash = (s: string) => {
-    try {
-      return btoa(unescape(encodeURIComponent(s)));
-    } catch (e) {
-      return s;
-    }
-  };
 
   const login = (username: string, password: string) => {
     if (!creds) return false;

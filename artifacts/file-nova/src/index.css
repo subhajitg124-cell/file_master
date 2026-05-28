@@ -31,44 +31,44 @@
 
 /* ── Light Theme ─────────────────────────────────────────────────────────── */
 :root {
-  --background:        #f8fafc;
+  --background:        #f4f7fb;
   --foreground:        #0f172a;
   --card:              #ffffff;
   --card-foreground:   #0f172a;
-  --primary:           #6366f1;
+  --primary:           #1f4d7a;
   --primary-foreground:#ffffff;
-  --secondary:         #eff6ff;
+  --secondary:         #eef4fb;
   --secondary-foreground: #0f172a;
-  --muted:             #e2e8f0;
-  --muted-foreground:  #475569;
-  --accent:            #eef2ff;
-  --accent-foreground: #2563eb;
-  --border:            #cbd5e1;
-  --input:             #cbd5e1;
-  --ring:              #2563eb;
-  --destructive:       #dc2626;
+  --muted:             #e7eef7;
+  --muted-foreground:  #526067;
+  --accent:            #f3f7fb;
+  --accent-foreground: #1f4d7a;
+  --border:            #d4dce6;
+  --input:             #d4dce6;
+  --ring:              #4f6fa1;
+  --destructive:       #c0392b;
   --destructive-foreground: #ffffff;
-  --radius: 12px;
+  --radius: 14px;
 }
 
 /* ── Dark Theme ──────────────────────────────────────────────────────────── */
 .dark {
-  --background:        #020617;
+  --background:        #08111f;
   --foreground:        #e2e8f0;
-  --card:              #0c1224;
+  --card:              #121c2f;
   --card-foreground:   #e2e8f0;
-  --primary:           #6366f1;
-  --primary-foreground:#0f172a;
-  --secondary:         #111827;
-  --secondary-foreground: #e2e8f0;
-  --muted:             #111827;
-  --muted-foreground:  #94a3b8;
-  --accent:            #0f172a;
-  --accent-foreground: #bfdbfe;
-  --border:            #1e293b;
-  --input:             #1e293b;
-  --ring:              #93c5fd;
-  --destructive:       #f87171;
+  --primary:           #5b7bc1;
+  --primary-foreground:#ffffff;
+  --secondary:         #11203a;
+  --secondary-foreground: #d1d9ec;
+  --muted:             #152339;
+  --muted-foreground:  #8fa3bf;
+  --accent:            #152339;
+  --accent-foreground: #aed1ff;
+  --border:            #23314b;
+  --input:             #23314b;
+  --ring:              #7f9ce1;
+  --destructive:       #ef6a5d;
   --destructive-foreground: #ffffff;
 }
 
@@ -225,24 +225,33 @@
   }
 
   /* ── Shadows & glows ────────────────────────────────────────────────────── */
-  .shadow-glow        { box-shadow: 0 0 20px 3px rgba(99,102,241,0.25),  0 0 0 1px rgba(99,102,241,0.15); }
-  .shadow-glow-sm     { box-shadow: 0 0 10px 2px rgba(99,102,241,0.18); }
-  .shadow-glow-red    { box-shadow: 0 0 20px 3px rgba(239,68,68,0.20),   0 0 0 1px rgba(239,68,68,0.10); }
-  .shadow-glow-blue   { box-shadow: 0 0 20px 3px rgba(59,130,246,0.20),  0 0 0 1px rgba(59,130,246,0.10); }
-  .shadow-glow-green  { box-shadow: 0 0 20px 3px rgba(16,185,129,0.20),  0 0 0 1px rgba(16,185,129,0.10); }
-  .shadow-glow-purple { box-shadow: 0 0 20px 3px rgba(139,92,246,0.20),  0 0 0 1px rgba(139,92,246,0.10); }
+  .shadow-soft        { box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); }
+  .shadow-panel       { box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07), 0 8px 24px rgba(15, 23, 42, 0.08); }
+  .shadow-panel-dark  { box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 24px rgba(0,0,0,0.18); }
+  .shadow-glow-sm     { box-shadow: 0 0 10px 2px rgba(99,102,241,0.12); }
+  .shadow-glow-red    { box-shadow: 0 0 20px 3px rgba(239,68,68,0.12),   0 0 0 1px rgba(239,68,68,0.06); }
+  .shadow-glow-blue   { box-shadow: 0 0 20px 3px rgba(59,130,246,0.12),  0 0 0 1px rgba(59,130,246,0.06); }
+  .shadow-glow-green  { box-shadow: 0 0 20px 3px rgba(16,185,129,0.12),  0 0 0 1px rgba(16,185,129,0.06); }
+  .shadow-glow-purple { box-shadow: 0 0 20px 3px rgba(139,92,246,0.12),  0 0 0 1px rgba(139,92,246,0.06); }
   .shadow-premium     {
     box-shadow:
-      0 1px 1px rgba(0,0,0,0.05),
-      0 4px 8px  rgba(0,0,0,0.06),
-      0 8px 24px rgba(0,0,0,0.08),
-      0 1px 0 rgba(255,255,255,0.05) inset;
+      0 1px 2px rgba(15, 23, 42, 0.05),
+      0 8px 24px rgba(15, 23, 42, 0.08);
   }
   .dark .shadow-premium {
     box-shadow:
-      0 1px 0 rgba(255,255,255,0.04) inset,
-      0 4px 8px  rgba(0,0,0,0.25),
-      0 12px 32px rgba(0,0,0,0.35);
+      0 1px 0 rgba(255,255,255,0.03) inset,
+      0 8px 24px rgba(0,0,0,0.18);
+  }
+  .border-soft {
+    border-color: rgba(79,111,161,0.16);
+  }
+  .highlight-label {
+    color: var(--primary);
+  }
+  .hero-accent {
+    background: rgba(31,77,122,0.08);
+    border: 1px solid rgba(31,77,122,0.12);
   }
 
   /* ── Gradient text ──────────────────────────────────────────────────────── */
