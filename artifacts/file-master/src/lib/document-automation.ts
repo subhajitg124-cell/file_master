@@ -49,21 +49,21 @@ export interface EventRule {
 export const translations: Record<AppLanguage, Record<string, string>> = {
   en: {
     assistantTitle: "Smart Government Assistant",
-    assistantCopy: "Pick a scheme, upload documents, and FileMaster AI prepares a submission-ready ZIP.",
+    assistantCopy: "Pick a scheme, upload documents, and FileNova AI prepares a submission-ready ZIP.",
     fixMode: "Fix My Documents",
     upload: "Upload documents",
     admin: "Admin",
   },
   bn: {
     assistantTitle: "স্মার্ট সরকারি সহায়ক",
-    assistantCopy: "স্কিম বেছে নিন, ডকুমেন্ট আপলোড করুন, FileMaster AI জমা দেওয়ার ZIP বানাবে।",
+    assistantCopy: "স্কিম বেছে নিন, ডকুমেন্ট আপলোড করুন, FileNova AI জমা দেওয়ার ZIP বানাবে।",
     fixMode: "আমার ডকুমেন্ট ঠিক করুন",
     upload: "ডকুমেন্ট আপলোড",
     admin: "অ্যাডমিন",
   },
   hi: {
     assistantTitle: "स्मार्ट सरकारी सहायक",
-    assistantCopy: "योजना चुनें, दस्तावेज अपलोड करें, FileMaster AI सबमिशन ZIP तैयार करेगा।",
+    assistantCopy: "योजना चुनें, दस्तावेज अपलोड करें, FileNova AI सबमिशन ZIP तैयार करेगा।",
     fixMode: "मेरे दस्तावेज ठीक करें",
     upload: "दस्तावेज अपलोड करें",
     admin: "एडमिन",

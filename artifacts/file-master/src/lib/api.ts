@@ -144,7 +144,7 @@ export const apiMock = {
         const newSize = Math.round(originalTotalSize * ratio);
         const percent = Math.round(((originalTotalSize - newSize) / originalTotalSize) * 100);
         const resolvedMime = outputMime || files[0]?.type || 'application/octet-stream';
-        const mockBlob = new Blob(['Simulated File Master Output'], { type: resolvedMime });
+        const mockBlob = new Blob(['Simulated FileNova Output'], { type: resolvedMime });
         const mockUrl = URL.createObjectURL(mockBlob);
         onSuccess(mockUrl, { originalSize: originalTotalSize, newSize, percent });
       } else {

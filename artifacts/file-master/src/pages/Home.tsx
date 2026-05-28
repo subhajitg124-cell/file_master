@@ -67,7 +67,7 @@ export default function Home() {
 
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [language, setLanguage] = useState<AppLanguage>(() => {
-    const stored = typeof window !== "undefined" ? localStorage.getItem("filemaster-language") : null;
+    const stored = typeof window !== "undefined" ? localStorage.getItem("filenova-language") : null;
     return stored === "bn" || stored === "hi" ? stored : "en";
   });
   const [selectedRuleId, setSelectedRuleId] = useState(eventRules[0].id);
@@ -85,7 +85,7 @@ export default function Home() {
   }, [theme]);
 
   useEffect(() => {
-    localStorage.setItem("filemaster-language", language);
+    localStorage.setItem("filenova-language", language);
   }, [language]);
 
   useEffect(() => {
@@ -124,7 +124,7 @@ export default function Home() {
               <WandSparkles className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-base font-black leading-none">FileMaster AI</p>
+              <p className="text-base font-black leading-none">FileNova AI</p>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Indian document automation</p>
             </div>
           </button>

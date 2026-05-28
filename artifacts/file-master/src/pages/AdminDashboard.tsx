@@ -40,7 +40,7 @@ export default function AdminDashboard() {
       <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">FileMaster AI Console</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">FileNova AI Console</p>
             <h1 className="text-xl font-black">Super Admin Dashboard</h1>
           </div>
           <div className="flex items-center gap-2">

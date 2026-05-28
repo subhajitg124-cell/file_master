@@ -170,8 +170,8 @@ const TOOL_ICON_BG: Record<string, string> = {
   office: 'bg-emerald-500/10 border-emerald-500/20', video: 'bg-violet-500/10 border-violet-500/20',
 };
 
-const FAVORITES_KEY = 'file-master-favorite-tools';
-const RECENTS_KEY = 'file-master-recent-tools';
+const FAVORITES_KEY = 'filenova-favorite-tools';
+const RECENTS_KEY = 'filenova-recent-tools';
 const SPECIAL_FILTERS = ['favorites', 'recent'];
 
 const getToolKey = (tool: ToolItem) => `${tool.category}:${tool.actionName}:${tool.title}`;
