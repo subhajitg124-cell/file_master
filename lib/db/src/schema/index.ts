@@ -152,3 +152,7 @@ export {
   digilockerSessionsTable,
   examTemplatesTable,
 } from "./premium";
+
+export * from "./subscriptions";
+export { subscriptionsTable } from "./subscriptions";
+

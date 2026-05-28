@@ -80,6 +80,18 @@ export default function Home() {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
 
+  // SEO: Set page title dynamically for Google
+  useEffect(() => {
+    document.title = "FileNova – PDF Merge, Compress, Convert & Document Tools | filenova.in";
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute(
+        "content",
+        "FileNova provides free online tools to merge PDF, compress PDF, convert images to PDF, resize images, extract text (OCR), and automate Indian government document workflows."
+      );
+    }
+  }, []);
+
   // language persistence handled by LanguageProvider
 
   useEffect(() => {
@@ -150,6 +162,10 @@ export default function Home() {
                 <LayoutDashboard className="h-4 w-4" />
                 {t.admin}
               </Link>
+              <Link href="/pricing" className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-bold text-muted-foreground hover:text-foreground">
+                <Zap className="h-4 w-4 text-amber-500" />
+                <span>Pricing</span>
+              </Link>
               <Link href="/premium" className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-bold text-primary">
                 <Sparkles className="h-4 w-4" />
                 <span className="font-black">Premium</span>
@@ -189,6 +205,10 @@ export default function Home() {
               <Link href="/premium" className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-bold text-primary">
                 <Sparkles className="h-4 w-4" />
                 <span className="font-black">Premium</span>
+              </Link>
+              <Link href="/pricing" className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-bold text-muted-foreground hover:text-foreground">
+                <Zap className="h-4 w-4 text-amber-500" />
+                <span>Pricing</span>
               </Link>
               <Link href="/admin" className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-bold text-muted-foreground hover:text-foreground">
                 <LayoutDashboard className="h-4 w-4" />
@@ -493,6 +513,38 @@ export default function Home() {
           </section>
         )}
       </main>
+
+      {/* ✅ SEO: Keyword section — visible to search engines, styled subtly for users */}
+      <section aria-label="FileNova Tool Directory" className="border-t border-border bg-muted/30 px-4 py-10">
+        <div className="mx-auto max-w-7xl">
+          <h2 className="mb-6 text-center text-lg font-black">All File & Document Tools</h2>
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 text-center">
+            {[
+              { name: "PDF Merge", desc: "Combine multiple PDFs into one file" },
+              { name: "Compress PDF", desc: "Reduce PDF file size for email & portals" },
+              { name: "Image to PDF", desc: "Convert JPG, PNG images to PDF instantly" },
+              { name: "PDF to Image", desc: "Extract pages from PDF as images" },
+              { name: "OCR PDF", desc: "Extract text from scanned documents" },
+              { name: "Resize Image", desc: "Change image dimensions & resolution" },
+              { name: "Compress Image", desc: "Reduce image size without quality loss" },
+              { name: "Image Converter", desc: "Convert between JPG, PNG, WEBP formats" },
+              { name: "Document Converter", desc: "Convert Word, Excel to PDF" },
+              { name: "PDF Split", desc: "Split a PDF into separate pages" },
+              { name: "Watermark PDF", desc: "Add text or image watermarks to PDF" },
+              { name: "Unlock PDF", desc: "Remove password protection from PDF" },
+            ].map(({ name, desc }) => (
+              <div key={name} className="rounded-xl border border-border bg-card p-3 hover:border-primary/40 transition">
+                <p className="text-sm font-bold text-foreground">{name}</p>
+                <p className="mt-1 text-[11px] text-muted-foreground leading-4">{desc}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-8 text-center text-xs text-muted-foreground">
+            FileNova — Free online PDF tools, image converters, and document automation for everyone.
+            Merge PDF &bull; Compress PDF &bull; Image to PDF &bull; OCR &bull; Document Converter &bull; Government Form Automation
+          </p>
+        </div>
+      </section>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import React, { Component, ErrorInfo, ReactNode } from "react";
 import Home from "@/pages/Home";
 import AdminDashboard from "@/pages/AdminDashboard";
 import PremiumSuite from "@/pages/PremiumSuite";
+import PricingPage from "@/pages/PricingPage";
 import NotFound from "@/pages/not-found";
 import { LanguageProvider } from "@/lib/i18n";
 import { AdminProvider } from "@/lib/admin";
@@ -67,6 +68,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/premium" component={PremiumSuite} />
+      <Route path="/pricing" component={PricingPage} />
       <Route path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>

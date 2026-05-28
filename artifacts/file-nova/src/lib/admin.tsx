@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 type AdminCreds = { username: string; passwordHash: string } | null;
 type Settings = { standaloneMode: boolean; editingEnabled: boolean };
 
 const CRED_KEY = "filenova-admin";
 const SETTINGS_KEY = "filenova-settings";
+const SESSION_KEY = "filenova-admin-session";
 const DEFAULT_ADMIN_USERNAME = "subhajitghosh";
 const DEFAULT_ADMIN_PASSWORD = "Subhajit@56";
 
@@ -13,6 +15,7 @@ const defaultSettings: Settings = { standaloneMode: false, editingEnabled: true 
 const AdminContext = createContext<{
   creds: AdminCreds;
   settings: Settings;
+  isAuthenticated: boolean;
   login: (username: string, password: string) => boolean;
   logout: () => void;
   setCredentials: (username: string, password: string) => void;
@@ -51,6 +54,17 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
+  // ── Session persistence via sessionStorage ─────────────────────────────────
+  // Survives page refresh within the same browser tab/session.
+  // Clears automatically when the browser tab is closed.
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem(SESSION_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+
   useEffect(() => {
     try {
       if (creds) localStorage.setItem(CRED_KEY, JSON.stringify(creds));
@@ -64,17 +78,20 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {}
   }, [settings]);
 
-  const login = (username: string, password: string) => {
+  const login = (username: string, password: string): boolean => {
     if (!creds) return false;
     if (creds.username === username && creds.passwordHash === hash(password)) {
-      // session is ephemeral - we just validate
+      setIsAuthenticated(true);
+      try { sessionStorage.setItem(SESSION_KEY, "1"); } catch {}
       return true;
     }
     return false;
   };
 
   const logout = () => {
-    // nothing persisted for session; keep creds stored but client can lock
+    setIsAuthenticated(false);
+    try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+    toast.success("Logged out of admin panel");
   };
 
   const setCredentials = (username: string, password: string) => {
@@ -82,10 +99,13 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     setCreds(payload);
   };
 
-  const setSettings = (s: Partial<Settings>) => setSettingsState((prev) => ({ ...prev, ...s }));
+  const setSettings = (s: Partial<Settings>) =>
+    setSettingsState((prev) => ({ ...prev, ...s }));
 
   return (
-    <AdminContext.Provider value={{ creds, settings, login, logout, setCredentials, setSettings }}>
+    <AdminContext.Provider
+      value={{ creds, settings, isAuthenticated, login, logout, setCredentials, setSettings }}
+    >
       {children}
     </AdminContext.Provider>
   );

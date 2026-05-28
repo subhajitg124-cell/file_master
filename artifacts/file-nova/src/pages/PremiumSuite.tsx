@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   Bot,
   Camera,
@@ -22,6 +22,12 @@ import {
   WandSparkles,
 } from "lucide-react";
 import { VoiceAssistant } from "@/components/VoiceAssistant";
+import { AadhaarMasking } from "@/components/AadhaarMasking";
+import { QRVerification } from "@/components/QRVerification";
+import { ExamToolkit } from "@/components/ExamToolkit";
+import { QuickShareButton } from "@/components/WhatsAppShare";
+import { FeatureGate } from "@/components/FeatureGate";
+import { useFileStore } from "@/store/useFileStore";
 
 type FeatureKey =
   | "whatsapp"
@@ -75,6 +81,53 @@ export default function PremiumSuite() {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [security, setSecurity] = useState<any>(null);
+
+  const [, setLocation] = useLocation();
+  const { setSelectedSection, setOperation } = useFileStore();
+
+  const handleVoiceCommand = (action: string, target: string) => {
+    if (action === "compress") {
+      if (target === "pdf") {
+        setSelectedSection("pdf");
+        setOperation("compress");
+        setLocation("/");
+      } else if (target === "image") {
+        setSelectedSection("image");
+        setOperation("compress");
+        setLocation("/");
+      }
+    } else if (action === "merge") {
+      setSelectedSection("pdf");
+      setOperation("merge");
+      setLocation("/");
+    } else if (action === "resize") {
+      setSelectedSection("image");
+      setOperation("resize");
+      setLocation("/");
+    } else if (action === "enhance") {
+      setSelectedSection("image");
+      setOperation("enhance");
+      setLocation("/");
+    } else if (action === "convert") {
+      if (target === "pdf") {
+        setSelectedSection("pdf");
+        setOperation("convert");
+        setLocation("/");
+      } else if (target === "image") {
+        setSelectedSection("image");
+        setOperation("convert");
+        setLocation("/");
+      }
+    } else if (action === "split") {
+      setSelectedSection("pdf");
+      setOperation("split");
+      setLocation("/");
+    } else if (action === "aadhaar-mask") {
+      setActive("aadhaar");
+    } else if (action === "share") {
+      setActive("whatsapp");
+    }
+  };
 
   const current = useMemo(() => features.find((item) => item.key === active) || features[0], [active]);
 
@@ -206,30 +259,65 @@ export default function PremiumSuite() {
                 </div>
               ))}
             </div>
-          </div>
-
-          {active === "voice" && (
-            <div className="grid gap-4 lg:grid-cols-3">
-              <VoiceAssistant language="en" />
-              <VoiceAssistant language="hi" />
-              <VoiceAssistant language="bn" />
-            </div>
-          )}
-
-          <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
-            <div className="rounded-2xl border border-border bg-card p-4">
-              <div className="mb-3 flex items-center gap-2">
-                <FileCheck2 className="h-4 w-4 text-primary" />
-                <h3 className="font-black">Live response</h3>
-              </div>
-              {result ? (
-                <pre className="max-h-[520px] overflow-auto rounded-xl border border-border bg-background p-4 text-xs leading-5 text-foreground">
-                  {JSON.stringify(result, null, 2)}
-                </pre>
+          </div>          <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+            <div className="rounded-2xl border border-border bg-card p-5 shadow-premium">
+              {active === "aadhaar" ? (
+                <FeatureGate requiredPlan="basic" featureName="Aadhaar Masking">
+                  <AadhaarMasking />
+                </FeatureGate>
+              ) : active === "qr" ? (
+                <FeatureGate requiredPlan="pro" featureName="QR Verification">
+                  <QRVerification />
+                </FeatureGate>
+              ) : active === "exam" ? (
+                <FeatureGate requiredPlan="pro" featureName="Exam Toolkit">
+                  <ExamToolkit />
+                </FeatureGate>
+              ) : active === "voice" ? (
+                <FeatureGate requiredPlan="basic" featureName="Voice Assistant">
+                  <VoiceAssistant onCommand={handleVoiceCommand} />
+                </FeatureGate>
+              ) : active === "whatsapp" ? (
+                <FeatureGate requiredPlan="basic" featureName="WhatsApp Share">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10">
+                        <MessageCircle className="h-5 w-5 text-emerald-500" />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                          Premium share
+                        </p>
+                        <h3 className="text-base font-black text-foreground">WhatsApp Secure Share</h3>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Upload a file or document to share securely over WhatsApp. A tracked download link with 48-hour auto-expiry will be generated.
+                    </p>
+                    <div className="p-6 border border-dashed border-border bg-background/40 rounded-xl text-center space-y-4">
+                      <p className="text-sm font-black text-foreground">Demo Document: student-marksheet.pdf</p>
+                      <div className="flex justify-center">
+                        <QuickShareButton documentId="demo-doc-123" documentName="student-marksheet.pdf" />
+                      </div>
+                    </div>
+                  </div>
+                </FeatureGate>
               ) : (
-                <div className="flex min-h-[260px] items-center justify-center rounded-xl border border-dashed border-border bg-background/60 p-6 text-center text-sm text-muted-foreground">
-                  Select a module and run the workflow to preview API output, generated links, confidence scores, reports or security controls.
-                </div>
+                <>
+                  <div className="mb-3 flex items-center gap-2">
+                    <FileCheck2 className="h-4 w-4 text-primary" />
+                    <h3 className="font-black">Live response</h3>
+                  </div>
+                  {result ? (
+                    <pre className="max-h-[520px] overflow-auto rounded-xl border border-border bg-background p-4 text-xs leading-5 text-foreground">
+                      {JSON.stringify(result, null, 2)}
+                    </pre>
+                  ) : (
+                    <div className="flex min-h-[260px] items-center justify-center rounded-xl border border-dashed border-border bg-background/60 p-6 text-center text-sm text-muted-foreground">
+                      Select a module and run the workflow to preview API output, generated links, confidence scores, reports or security controls.
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

@@ -8,6 +8,7 @@ import rateLimit from "express-rate-limit";
 import { logger } from "../lib/logger";
 import { execSync } from "child_process";
 import premiumRouter from "./premium";
+import subscriptionRouter from "./subscriptions";
 
 const router = Router();
 
@@ -361,5 +362,6 @@ expiredCleanupTimer.unref();
 
 // Mount premium features routes
 router.use("/premium", premiumRouter);
+router.use("/premium/subscription", subscriptionRouter);
 
 export default router;
