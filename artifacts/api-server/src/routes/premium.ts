@@ -24,7 +24,7 @@ const createShareSchema = z.object({
  */
 router.post("/shares", async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id || "user-123"; // Mock
+    const userId = (req as any).user?.id || "user-123"; // Mock
     const body = createShareSchema.parse(req.body);
 
     // Generate secure share token

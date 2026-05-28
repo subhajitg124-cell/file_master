@@ -4,7 +4,7 @@
     "outDir": "dist",
     "rootDir": "src",
     "types": ["node"],
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "strictFunctionTypes": true
   },
   "include": ["src"],
