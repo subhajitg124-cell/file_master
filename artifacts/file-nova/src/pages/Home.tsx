@@ -2,7 +2,7 @@ import { AppLanguage, automationPillars, eventRules, getRuleCompletion, quickAct
 import { useLanguage, useTranslation } from "@/lib/i18n";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
   ArrowRight,
@@ -18,6 +18,7 @@ import {
   Languages,
   LayoutDashboard,
   Lock,
+  Mic,
   Moon,
   Play,
   Search,
@@ -36,6 +37,7 @@ import { useAdmin } from "@/lib/admin";
 import { apiClient } from "@/lib/api";
 import { DownloadHub } from "@/components/workspace/DownloadHub";
 import { OptionsPanel } from "@/components/workspace/OptionsPanel";
+import { PassportPhotoEditor } from "@/components/workspace/PassportPhotoEditor";
 import { PreviewCanvas } from "@/components/workspace/PreviewCanvas";
 import { ProgressTracker } from "@/components/workspace/ProgressTracker";
 import { ToolGrid } from "@/components/workspace/ToolGrid";
@@ -44,6 +46,9 @@ import { TestingNotice } from "@/components/TestingNotice";
 import { VisualGuideModal } from "@/components/workspace/VisualGuideModal";
 import { AdSenseUnit } from "@/components/AdSenseUnit";
 import { UserProfileDropdown } from "@/components/UserProfileDropdown";
+import { VoiceAssistant } from "@/components/VoiceAssistant";
+import { QuickShareButton } from "@/components/WhatsAppShare";
+import { EditingWindow } from "@/components/EditingWindow";
 
 const languageLabels: Record<AppLanguage, string> = {
   en: "English",
@@ -95,8 +100,12 @@ const actionColorMeta: Record<string, { bg: string; text: string; border: string
 export default function Home() {
   const {
     files,
+    rawFiles,
+    operationOptions,
     selectedOperation,
     isProcessing,
+    progress,
+    jobId,
     downloadUrl,
     backendHealthy,
     backendCapabilities,
@@ -107,6 +116,9 @@ export default function Home() {
     updateOptions,
     clearStore,
   } = useFileStore();
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorStatus, setEditorStatus] = useState<string>("");
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     const saved = localStorage.getItem("filenova-theme");
     return saved === "light" || saved === "dark" ? saved : "light";
@@ -181,6 +193,11 @@ export default function Home() {
   );
   const t = useTranslation();
   const completion = getRuleCompletion(selectedRule, files.length);
+  const isPassportEditorActive =
+    selectedOperation === 'resize' &&
+    rawFiles.some((file) => file.type.startsWith('image/')) &&
+    ((operationOptions.resize_width || operationOptions.width) === 200) &&
+    ((operationOptions.resize_height || operationOptions.height) === 230);
   const step = downloadUrl ? 3 : files.length > 0 && selectedOperation ? 2 : files.length > 0 ? 1 : 0;
 
   useEffect(() => {
@@ -226,6 +243,53 @@ export default function Home() {
     }
   }, [admin.settings.standaloneMode]);
 
+  const editTargetFile = rawFiles.find((file) => file.type.startsWith("image/")) ?? rawFiles[0] ?? null;
+  const editTargetType = editTargetFile
+    ? editTargetFile.type === "application/pdf"
+      ? "pdf"
+      : editTargetFile.type.startsWith("image/")
+      ? "image"
+      : "document"
+    : "image";
+
+  const shareDocumentId = files[0]?.id ?? "demo-doc-123";
+  const shareDocumentName = files[0]?.name ?? "selected-file.pdf";
+
+  const handleEditorDone = async (result: Blob) => {
+    setEditorStatus("Preparing edited file for download...");
+    const url = URL.createObjectURL(result);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = editTargetFile?.name ? `edited-${editTargetFile.name}` : "filenova-edited.png";
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+    setEditorStatus("Edited file downloaded successfully.");
+    setEditorOpen(false);
+  };
+
+  const handleVoiceCommand = (action: string, target: string) => {
+    if (action === "compress") {
+      if (target === "pdf") return openQuickAction("pdf", "compress");
+      if (target === "image") return openQuickAction("image", "compress");
+    }
+    if (action === "merge") return openQuickAction("pdf", "merge");
+    if (action === "resize") return openQuickAction("image", "photo");
+    if (action === "enhance") return openQuickAction("image", "enhance");
+    if (action === "ocr") return openQuickAction("pdf", "ocr");
+    if (action === "split") return openQuickAction("pdf", "split");
+    if (action === "aadhaar-mask") return openQuickAction("image", "aadhaar");
+    if (action === "convert") {
+      if (target === "pdf") return openQuickAction("pdf", "convert");
+      if (target === "image") return openQuickAction("image", "convert");
+    }
+    if (action === "share") {
+      setVoiceOpen(false);
+      return;
+    }
+  };
+
   const startFixMode = () => {
     clearStore();
     setSelectedSection(null);
@@ -243,13 +307,13 @@ export default function Home() {
       updateOptions({ operation: "pdf_ocr" });
     } else if (action === "aadhaar") {
       setOperation("resize");
-      updateOptions({ operation: "resize", resizeType: "dimensions", width: 856, height: 540 });
+      updateOptions({ operation: "resize", resizeType: "dimensions", width: 856, height: 540, resize_width: 856, resize_height: 540, resize_lock_aspect: false });
     } else if (action === "signature") {
       setOperation("resize");
-      updateOptions({ operation: "resize", resizeType: "dimensions", width: 280, height: 80 });
+      updateOptions({ operation: "resize", resizeType: "dimensions", width: 280, height: 80, resize_width: 280, resize_height: 80, resize_lock_aspect: false });
     } else if (action === "photo") {
       setOperation("resize");
-      updateOptions({ operation: "resize", resizeType: "dimensions", width: 200, height: 230 });
+      updateOptions({ operation: "resize", resizeType: "dimensions", width: 200, height: 230, resize_width: 200, resize_height: 230, resize_lock_aspect: false });
     } else if (action === "zip") {
       setOperation("convert");
       updateOptions({ operation: "html_to_zip" });
@@ -416,6 +480,65 @@ export default function Home() {
           Some video and office conversions may run in fallback mode until FFmpeg/LibreOffice are enabled.
         </div>
       )}
+
+      {isProcessing && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed left-0 right-0 bottom-20 z-40 px-4 md:px-6"
+        >
+          <div className="mx-auto max-w-7xl rounded-3xl border border-primary/15 bg-primary/10 p-4 shadow-premium backdrop-blur-xl">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-black text-foreground">Processing in progress</p>
+                <p className="text-xs text-muted-foreground">
+                  {selectedOperation ? `${selectedOperation.charAt(0).toUpperCase() + selectedOperation.slice(1)} workflow` : "Preparing files"} · Job {jobId ?? "pending"}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-black tabular-nums text-foreground">{Math.round(progress)}%</span>
+                <div className="h-2.5 w-48 overflow-hidden rounded-full bg-background border border-border">
+                  <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.min(100, Math.round(progress))}%` }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      <div className="fixed bottom-36 right-4 z-40 hidden flex-col items-end gap-3 md:flex">
+        <div className="w-full max-w-xs rounded-3xl border border-border bg-card/95 p-4 shadow-premium backdrop-blur-xl">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Premium quick actions</p>
+              <p className="text-sm font-black text-foreground">Voice & sharing helpers</p>
+            </div>
+            <button
+              onClick={() => setVoiceOpen(true)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-background text-primary hover:bg-primary/10 transition"
+              aria-label="Open voice assistant"
+            >
+              <Mic className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <QuickShareButton
+              documentId={shareDocumentId}
+              documentName={shareDocumentName}
+              variant="icon"
+            />
+            <button
+              onClick={() => setVoiceOpen(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-primary bg-primary/10 px-3 py-2 text-sm font-bold text-primary hover:bg-primary/20 transition"
+            >
+              <Mic className="h-4 w-4" />
+              Voice
+            </button>
+          </div>
+          <p className="mt-3 text-[11px] text-muted-foreground">Use voice commands or generate a secure WhatsApp share link for files without leaving the workspace.</p>
+        </div>
+      </div>
 
       <main className="mx-auto max-w-7xl px-4 py-16 sm:py-24">
         {files.length === 0 && (
@@ -933,13 +1056,80 @@ export default function Home() {
                     <ToolGrid />
                   </div>
                 )}
-                {step === 2 && (isProcessing ? <ProgressTracker /> : <><PreviewCanvas /><OptionsPanel /></>)}
+                {step === 2 && (isProcessing ? <ProgressTracker /> : <>
+                  <div className="space-y-5">
+                    {isPassportEditorActive && <PassportPhotoEditor />}
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-background p-4">
+                      <div>
+                        <p className="text-sm font-bold">Preview workspace</p>
+                        <p className="text-xs text-muted-foreground">Open the image editor for polishing before download.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditorOpen(true)}
+                        disabled={!editTargetFile}
+                        className="inline-flex items-center gap-2 rounded-2xl border border-border bg-primary px-4 py-2 text-sm font-black text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Edit file
+                      </button>
+                    </div>
+                    <PreviewCanvas />
+                    <OptionsPanel />
+                  </div>
+                </>)}
                 {step === 3 && <DownloadHub />}
               </div>
             </div>
           </section>
         )}
       </main>
+
+      <AnimatePresence>
+        {voiceOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end justify-end bg-black/40 backdrop-blur-sm p-4 sm:items-center sm:justify-center"
+          >
+            <motion.div
+              initial={{ y: 24, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 24, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 320, damping: 24 }}
+              className="w-full max-w-md rounded-3xl border border-border bg-card shadow-premium overflow-hidden"
+            >
+              <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Voice assistant</p>
+                  <p className="text-base font-black text-foreground">Speak a command</p>
+                </div>
+                <button
+                  onClick={() => setVoiceOpen(false)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-background text-muted-foreground hover:text-foreground transition"
+                  aria-label="Close voice assistant"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="p-4">
+                <VoiceAssistant onCommand={handleVoiceCommand} />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {editorOpen && editTargetFile && (
+          <EditingWindow
+            file={editTargetFile}
+            fileType={editTargetType}
+            onClose={() => setEditorOpen(false)}
+            onDone={handleEditorDone}
+          />
+        )}
+      </AnimatePresence>
 
       {/* AdSense Unit placement */}
       <div className="mx-auto max-w-7xl px-4 py-4">

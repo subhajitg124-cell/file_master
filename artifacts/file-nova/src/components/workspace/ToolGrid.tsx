@@ -62,6 +62,14 @@ const CATEGORY_ORDER: Record<string, string[]> = {
   video:  ['vid_edit','vid_convert'],
 };
 
+const CATEGORY_TABS = [
+  { key: 'all', label: 'All' },
+  { key: 'pdf', label: 'PDF' },
+  { key: 'image', label: 'Images' },
+  { key: 'office', label: 'Office' },
+  { key: 'video', label: 'Video' },
+];
+
 const TOOLS: ToolItem[] = [
   // ── PDF / Merge & Combine ───────────────────────────────────────────────────
   { id: 'merge',   title: 'Merge PDFs',       description: 'Combine multiple PDF files into one document.',         category: 'pdf', subcategory: 'pdf_merge',    icon: FileText,      actionName: 'merge' },
@@ -189,7 +197,7 @@ const readStoredList = (key: string) => {
 };
 
 export const ToolGrid: React.FC = () => {
-  const { files, setOperation, updateOptions, isMockMode, jobId, setJobId, setError, addFiles, selectedSection } = useFileStore();
+  const { files, setOperation, updateOptions, isMockMode, jobId, setJobId, setError, addFiles, selectedSection, setSelectedSection } = useFileStore();
   const t = useTranslation();
   const admin = useAdmin();
   const [searchQuery, setSearchQuery] = useState('');
@@ -202,6 +210,11 @@ export const ToolGrid: React.FC = () => {
   const firstFileType = files[0]?.type || '';
   const favoriteSet = new Set(favoriteTools);
   const recentSet = new Set(recentTools);
+
+  const handleCategoryChange = (category: 'all' | 'pdf' | 'image' | 'office' | 'video') => {
+    setSelectedSection(category === 'all' ? null : category);
+    setActiveSubcategory('all');
+  };
 
   const isSuggested = (tool: ToolItem) => {
     if (files.length === 0) return false;
@@ -349,6 +362,18 @@ export const ToolGrid: React.FC = () => {
             <X className="h-3.5 w-3.5" />
           </button>
         )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 mt-3">
+        {CATEGORY_TABS.map((category) => (
+          <button
+            key={category.key}
+            onClick={() => handleCategoryChange(category.key as any)}
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${activeCategory === category.key ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary hover:text-foreground'}`}
+          >
+            {category.label}
+          </button>
+        ))}
       </div>
 
       <div className="flex flex-wrap items-center gap-2 mt-3">
