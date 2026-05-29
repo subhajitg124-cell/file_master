@@ -4,6 +4,7 @@ import { LazyMotion, domAnimation } from "framer-motion";
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import Home from "@/pages/Home";
 import AdminDashboard from "@/pages/AdminDashboard";
+import AdminLogin from "@/pages/AdminLogin";
 import PremiumSuite from "@/pages/PremiumSuite";
 import PricingPage from "@/pages/PricingPage";
 import NotFound from "@/pages/not-found";
@@ -70,6 +71,7 @@ function Router() {
       <Route path="/premium" component={PremiumSuite} />
       <Route path="/pricing" component={PricingPage} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin-login" component={AdminLogin} />
       <Route component={NotFound} />
     </Switch>
   );

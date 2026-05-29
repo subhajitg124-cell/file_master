@@ -247,23 +247,32 @@ const RedactRow: React.FC<RedactRowProps> = ({ area, idx, onChange, onRemove }) 
   <div className="border border-border rounded-xl p-3 space-y-3 bg-card/50">
     <div className="flex items-center justify-between">
       <span className="text-xs font-bold text-foreground">Redact Area {idx + 1}</span>
-      <button onClick={() => onRemove(area.id)} className="h-6 w-6 rounded-md bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors">
+      <button onClick={() => onRemove(area.id)}
+        title="Remove redaction area"
+        aria-label="Remove redaction area"
+        className="h-6 w-6 rounded-md bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors">
         <Minus className="h-3 w-3" />
       </button>
     </div>
     <div className="grid grid-cols-2 gap-2">
       <div className="space-y-1">
-        <label className="text-[10px] text-muted-foreground">Page #</label>
-        <input type="number" min={1} value={area.page} onChange={(e) => onChange(area.id, { page: Math.max(1, parseInt(e.target.value) || 1) })}
+        <label htmlFor={`redact-page-${area.id}`} className="text-[10px] text-muted-foreground">Page #</label>
+        <input id={`redact-page-${area.id}`} type="number" min={1} value={area.page} onChange={(e) => onChange(area.id, { page: Math.max(1, parseInt(e.target.value) || 1) })}
+          placeholder="1"
+          aria-label="Page number"
           className="w-full p-2 bg-card border border-border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40" />
       </div>
       <div className="flex items-center gap-2 pt-5">
-        <label className="text-[10px] text-muted-foreground shrink-0">Fill</label>
-        <input type="color" value={area.colorHex || '#000000'} onChange={(e) => onChange(area.id, { colorHex: e.target.value })}
+        <label htmlFor={`redact-color-${area.id}`} className="text-[10px] text-muted-foreground shrink-0">Fill</label>
+        <input id={`redact-color-${area.id}`} type="color" value={area.colorHex || '#000000'} onChange={(e) => onChange(area.id, { colorHex: e.target.value })}
+          aria-label="Fill color"
+          title="Fill color"
           className="h-8 w-12 rounded border border-border cursor-pointer bg-card p-0.5" />
         <div className="flex gap-1.5">
           {['#000000', '#ffffff', '#1a1a8c'].map(c => (
             <button key={c} onClick={() => onChange(area.id, { colorHex: c })}
+              title={`Set fill color to ${c}`}
+              aria-label={`Set fill color to ${c}`}
               className="h-6 w-6 rounded border-2 hover:scale-110 transition-transform"
               style={{ backgroundColor: c, borderColor: area.colorHex === c ? '#6366f1' : 'transparent' }} />
           ))}
@@ -273,8 +282,10 @@ const RedactRow: React.FC<RedactRowProps> = ({ area, idx, onChange, onRemove }) 
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
       {([['X', 'x'], ['Y (top)', 'y'], ['W', 'width'], ['H', 'height']] as [string, keyof RedactArea][]).map(([lbl, key]) => (
         <div key={key} className="space-y-1">
-          <label className="text-[9px] text-muted-foreground">{lbl}</label>
-          <input type="number" min={0} value={(area as any)[key] || 0} onChange={(e) => onChange(area.id, { [key]: parseInt(e.target.value) || 0 })}
+          <label htmlFor={`redact-${key}-${area.id}`} className="text-[9px] text-muted-foreground">{lbl}</label>
+          <input id={`redact-${key}-${area.id}`} type="number" min={0} value={(area as any)[key] || 0} onChange={(e) => onChange(area.id, { [key]: parseInt(e.target.value) || 0 })}
+            placeholder="0"
+            aria-label={lbl}
             className="w-full p-1.5 bg-card border border-border rounded-md text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary/40" />
         </div>
       ))}
@@ -353,6 +364,8 @@ const ScanToPdfPanel: React.FC<{ onCapture: (file: File) => void }> = ({ onCaptu
         <canvas ref={canvasRef} className="hidden" />
         {state === 'active' && (
           <button onClick={capturePhoto}
+            title="Capture photo"
+            aria-label="Capture photo"
             className="absolute bottom-3 left-1/2 -translate-x-1/2 h-12 w-12 rounded-full bg-white border-4 border-white/50 shadow-lg hover:scale-110 transition-transform" />
         )}
       </div>
@@ -1401,7 +1414,10 @@ export const OptionsPanel: React.FC = () => {
             <div key={link.id} className="border border-border rounded-xl p-3 space-y-3 bg-card/50">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-foreground">Link {idx + 1}</span>
-                <button onClick={() => removeLink(link.id)} className="h-6 w-6 rounded-md bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors">
+                <button onClick={() => removeLink(link.id)}
+                  title="Remove link"
+                  aria-label="Remove link"
+                  className="h-6 w-6 rounded-md bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors">
                   <Minus className="h-3 w-3" />
                 </button>
               </div>
@@ -1412,27 +1428,33 @@ export const OptionsPanel: React.FC = () => {
               <div className="grid grid-cols-2 gap-2">
                 <NumInput label="Page #" value={link.page} min={1} onChange={(v) => updateLink(link.id, { page: v })} />
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Border width</label>
-                  <input type="number" min={0} max={4} value={link.borderWidth ?? 1}
+                  <label htmlFor={`link-border-width-${link.id}`} className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Border width</label>
+                  <input id={`link-border-width-${link.id}`} type="number" min={0} max={4} value={link.borderWidth ?? 1}
                     onChange={(e) => updateLink(link.id, { borderWidth: parseInt(e.target.value) || 0 })}
+                    placeholder="1"
+                    aria-label="Border width"
                     className="w-full p-2 bg-card border border-border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40" />
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {([['X', 'x'], ['Y (top)', 'y'], ['W', 'width'], ['H', 'height']] as [string, keyof PdfLink][]).map(([lbl, key]) => (
                   <div key={key} className="space-y-1">
-                    <label className="text-[9px] text-muted-foreground">{lbl}</label>
-                    <input type="number" min={0} value={(link as any)[key] || 0}
+                    <label htmlFor={`link-${key}-${link.id}`} className="text-[9px] text-muted-foreground">{lbl}</label>
+                    <input id={`link-${key}-${link.id}`} type="number" min={0} value={(link as any)[key] || 0}
                       onChange={(e) => updateLink(link.id, { [key]: parseInt(e.target.value) || 0 })}
+                      placeholder="0"
+                      aria-label={lbl}
                       className="w-full p-1.5 bg-card border border-border rounded-md text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary/40" />
                   </div>
                 ))}
               </div>
               <div className="flex gap-4 flex-wrap items-center">
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-muted-foreground font-semibold">Border color</label>
-                  <input type="color" value={link.borderColorHex || '#1a56db'}
+                  <label htmlFor={`link-border-color-${link.id}`} className="text-[10px] text-muted-foreground font-semibold">Border color</label>
+                  <input id={`link-border-color-${link.id}`} type="color" value={link.borderColorHex || '#1a56db'}
                     onChange={(e) => updateLink(link.id, { borderColorHex: e.target.value })}
+                    aria-label="Border color"
+                    title="Border color"
                     className="h-7 w-10 rounded border border-border cursor-pointer bg-card p-0.5" />
                 </div>
                 <button onClick={() => updateLink(link.id, { showHighlight: !link.showHighlight })}
@@ -1441,9 +1463,11 @@ export const OptionsPanel: React.FC = () => {
                 </button>
                 {link.showHighlight && (
                   <div className="flex items-center gap-2">
-                    <label className="text-[10px] text-muted-foreground font-semibold">Fill color</label>
-                    <input type="color" value={link.highlightColorHex || '#dbeafe'}
+                    <label htmlFor={`link-highlight-color-${link.id}`} className="text-[10px] text-muted-foreground font-semibold">Fill color</label>
+                    <input id={`link-highlight-color-${link.id}`} type="color" value={link.highlightColorHex || '#dbeafe'}
                       onChange={(e) => updateLink(link.id, { highlightColorHex: e.target.value })}
+                      aria-label="Highlight fill color"
+                      title="Highlight fill color"
                       className="h-7 w-10 rounded border border-border cursor-pointer bg-card p-0.5" />
                   </div>
                 )}
@@ -1488,7 +1512,10 @@ export const OptionsPanel: React.FC = () => {
             <div key={img.id} className="border border-border rounded-xl p-3 space-y-3 bg-card/50">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-foreground">Image {idx + 1}</span>
-                <button onClick={() => removeImgEntry(img.id)} className="h-6 w-6 rounded-md bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors">
+                <button onClick={() => removeImgEntry(img.id)}
+                  title="Remove image entry"
+                  aria-label="Remove image entry"
+                  className="h-6 w-6 rounded-md bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors">
                   <Minus className="h-3 w-3" />
                 </button>
               </div>
@@ -1504,9 +1531,11 @@ export const OptionsPanel: React.FC = () => {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {([['X', 'x'], ['Y (top)', 'y'], ['W', 'width'], ['H', 'height']] as [string, string][]).map(([lbl, key]) => (
                   <div key={key} className="space-y-1">
-                    <label className="text-[9px] text-muted-foreground">{lbl}</label>
-                    <input type="number" min={0} value={(img as any)[key] || 0}
+                    <label htmlFor={`img-${key}-${img.id}`} className="text-[9px] text-muted-foreground">{lbl}</label>
+                    <input id={`img-${key}-${img.id}`} type="number" min={0} value={(img as any)[key] || 0}
                       onChange={(e) => updateImgEntry(img.id, { [key]: parseInt(e.target.value) || 0 })}
+                      placeholder="0"
+                      aria-label={lbl}
                       className="w-full p-1.5 bg-card border border-border rounded-md text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary/40" />
                   </div>
                 ))}
@@ -1514,13 +1543,17 @@ export const OptionsPanel: React.FC = () => {
               <SliderField id={`img-op-${img.id}`} label="Opacity" unit="%" value={Math.round((img.opacity ?? 1) * 100)} min={10} max={100}
                 onChange={(v) => updateImgEntry(img.id, { opacity: v / 100 })} />
               <div className="flex items-center gap-3">
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Border width</label>
-                <input type="number" min={0} max={10} value={img.borderWidth ?? 0}
+                <label htmlFor={`img-border-width-${img.id}`} className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Border width</label>
+                <input id={`img-border-width-${img.id}`} type="number" min={0} max={10} value={img.borderWidth ?? 0}
                   onChange={(e) => updateImgEntry(img.id, { borderWidth: parseInt(e.target.value) || 0 })}
+                  placeholder="0"
+                  aria-label="Border width"
                   className="w-20 p-1.5 bg-card border border-border rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary/40" />
                 {(img.borderWidth ?? 0) > 0 && (
-                  <input type="color" value={img.borderColorHex || '#000000'}
+                  <input id={`img-border-color-${img.id}`} type="color" value={img.borderColorHex || '#000000'}
                     onChange={(e) => updateImgEntry(img.id, { borderColorHex: e.target.value })}
+                    aria-label="Border color"
+                    title="Border color"
                     className="h-7 w-10 rounded border border-border cursor-pointer bg-card p-0.5" />
                 )}
               </div>
@@ -1560,7 +1593,10 @@ export const OptionsPanel: React.FC = () => {
               <div key={shape.id} className="border border-border rounded-xl p-3 space-y-3 bg-card/50">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-foreground">Shape {idx + 1}</span>
-                  <button onClick={() => removeShape(shape.id)} className="h-6 w-6 rounded-md bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors">
+                  <button onClick={() => removeShape(shape.id)}
+                    title="Remove shape"
+                    aria-label="Remove shape"
+                    className="h-6 w-6 rounded-md bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors">
                     <Minus className="h-3 w-3" />
                   </button>
                 </div>
@@ -1580,9 +1616,11 @@ export const OptionsPanel: React.FC = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {([['X1', 'x'], ['Y1', 'y'], ['X2', 'x2'], ['Y2', 'y2']] as [string, keyof PdfShape][]).map(([lbl, key]) => (
                       <div key={key} className="space-y-1">
-                        <label className="text-[9px] text-muted-foreground">{lbl}</label>
-                        <input type="number" min={0} value={(shape as any)[key] || 0}
+                        <label htmlFor={`shape-${key}-${shape.id}`} className="text-[9px] text-muted-foreground">{lbl}</label>
+                        <input id={`shape-${key}-${shape.id}`} type="number" min={0} value={(shape as any)[key] || 0}
                           onChange={(e) => updateShape(shape.id, { [key]: parseInt(e.target.value) || 0 })}
+                          placeholder="0"
+                          aria-label={lbl}
                           className="w-full p-1.5 bg-card border border-border rounded-md text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary/40" />
                       </div>
                     ))}
@@ -1591,9 +1629,11 @@ export const OptionsPanel: React.FC = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {([['X', 'x'], ['Y (top)', 'y'], ['W', 'width'], ['H', 'height']] as [string, keyof PdfShape][]).map(([lbl, key]) => (
                       <div key={key} className="space-y-1">
-                        <label className="text-[9px] text-muted-foreground">{lbl}</label>
-                        <input type="number" min={0} value={(shape as any)[key] || 0}
+                        <label htmlFor={`shape-${key}-${shape.id}`} className="text-[9px] text-muted-foreground">{lbl}</label>
+                        <input id={`shape-${key}-${shape.id}`} type="number" min={0} value={(shape as any)[key] || 0}
                           onChange={(e) => updateShape(shape.id, { [key]: parseInt(e.target.value) || 0 })}
+                          placeholder="0"
+                          aria-label={lbl}
                           className="w-full p-1.5 bg-card border border-border rounded-md text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary/40" />
                       </div>
                     ))}
@@ -1601,17 +1641,21 @@ export const OptionsPanel: React.FC = () => {
                 )}
                 <div className="flex gap-4 flex-wrap items-start">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Stroke color</label>
-                    <input type="color" value={shape.strokeColorHex || '#4f46e5'}
+                    <label htmlFor={`shape-stroke-color-${shape.id}`} className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Stroke color</label>
+                    <input id={`shape-stroke-color-${shape.id}`} type="color" value={shape.strokeColorHex || '#4f46e5'}
                       onChange={(e) => updateShape(shape.id, { strokeColorHex: e.target.value })}
+                      aria-label="Stroke color"
+                      title="Stroke color"
                       className="h-8 w-12 rounded border border-border cursor-pointer bg-card p-0.5 block" />
                   </div>
                   {!lineMode && (
                     <>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Fill color</label>
-                        <input type="color" value={shape.fillColorHex || '#4f46e5'}
+                        <label htmlFor={`shape-fill-color-${shape.id}`} className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Fill color</label>
+                        <input id={`shape-fill-color-${shape.id}`} type="color" value={shape.fillColorHex || '#4f46e5'}
                           onChange={(e) => updateShape(shape.id, { fillColorHex: e.target.value })}
+                          aria-label="Fill color"
+                          title="Fill color"
                           className="h-8 w-12 rounded border border-border cursor-pointer bg-card p-0.5 block" />
                       </div>
                       <button onClick={() => updateShape(shape.id, { noFill: !shape.noFill })}
@@ -1620,9 +1664,11 @@ export const OptionsPanel: React.FC = () => {
                       </button>
                       {!shape.noFill && (
                         <div className="space-y-1">
-                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Fill opacity %</label>
-                          <input type="number" min={5} max={100} value={Math.round((shape.fillOpacity ?? 0.15) * 100)}
+                          <label htmlFor={`shape-fill-opacity-${shape.id}`} className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Fill opacity %</label>
+                          <input id={`shape-fill-opacity-${shape.id}`} type="number" min={5} max={100} value={Math.round((shape.fillOpacity ?? 0.15) * 100)}
                             onChange={(e) => updateShape(shape.id, { fillOpacity: (parseInt(e.target.value) || 15) / 100 })}
+                            placeholder="15"
+                            aria-label="Fill opacity percentage"
                             className="w-20 p-1.5 bg-card border border-border rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary/40" />
                         </div>
                       )}

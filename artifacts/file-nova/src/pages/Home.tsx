@@ -40,11 +40,22 @@ import { ProgressTracker } from "@/components/workspace/ProgressTracker";
 import { ToolGrid } from "@/components/workspace/ToolGrid";
 import { UploadZone } from "@/components/workspace/UploadZone";
 import { TestingNotice } from "@/components/TestingNotice";
+import { VisualGuideModal } from "@/components/workspace/VisualGuideModal";
 
 const languageLabels: Record<AppLanguage, string> = {
   en: "English",
   bn: "বাংলা",
   hi: "हिन्दी",
+};
+
+const actionColorMeta: Record<string, { bg: string; text: string; border: string; hover: string }> = {
+  compress:  { bg: "bg-amber-505/10 text-amber-500", text: "text-amber-500", border: "border-amber-550/20", hover: "hover:border-amber-400 hover:bg-amber-500/5 hover:text-amber-400" },
+  aadhaar:   { bg: "bg-indigo-500/10 text-indigo-500", text: "text-indigo-500", border: "border-indigo-500/20", hover: "hover:border-indigo-400 hover:bg-indigo-500/5 hover:text-indigo-400" },
+  signature: { bg: "bg-rose-500/10 text-rose-500", text: "text-rose-500", border: "border-rose-500/20", hover: "hover:border-rose-400 hover:bg-rose-500/5 hover:text-rose-400" },
+  photo:     { bg: "bg-emerald-500/10 text-emerald-500", text: "text-emerald-500", border: "border-emerald-500/20", hover: "hover:border-emerald-400 hover:bg-emerald-500/5 hover:text-emerald-400" },
+  enhance:   { bg: "bg-teal-500/10 text-teal-500", text: "text-teal-500", border: "border-teal-500/20", hover: "hover:border-teal-400 hover:bg-teal-500/5 hover:text-teal-400" },
+  ocr:       { bg: "bg-violet-500/10 text-violet-500", text: "text-violet-500", border: "border-violet-500/20", hover: "hover:border-violet-400 hover:bg-violet-500/5 hover:text-violet-400" },
+  zip:       { bg: "bg-sky-500/10 text-sky-500", text: "text-sky-500", border: "border-sky-500/20", hover: "hover:border-sky-400 hover:bg-sky-500/5 hover:text-sky-400" },
 };
 
 export default function Home() {
@@ -69,6 +80,7 @@ export default function Home() {
   const { language, setLanguage } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedRuleId, setSelectedRuleId] = useState(eventRules[0].id);
+  const [guideOpen, setGuideOpen] = useState(false);
   const logoUrl = `${import.meta.env.BASE_URL}logo.png`;
 
   const selectedRule = useMemo(
@@ -154,8 +166,7 @@ export default function Home() {
     : "";
 
   return (
-    <div className={`min-h-screen bg-background text-foreground bg-mesh ${themeClass}`}>
-      <TestingNotice />
+    <div className={`min-h-screen bg-background text-foreground bg-mesh pb-24 ${themeClass}`}>
       <header className="sticky top-0 z-50 border-b border-border bg-background/82 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
@@ -184,10 +195,6 @@ export default function Home() {
             </div>
 
             <div className="hidden md:flex items-center gap-2">
-              <Link href="/admin" className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-bold text-muted-foreground hover:text-foreground">
-                <LayoutDashboard className="h-4 w-4" />
-                {t.admin}
-              </Link>
               <Link href="/pricing" className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-bold text-muted-foreground hover:text-foreground">
                 <Zap className="h-4 w-4 text-amber-500" />
                 <span>Pricing</span>
@@ -235,10 +242,6 @@ export default function Home() {
               <Link href="/pricing" className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-bold text-muted-foreground hover:text-foreground">
                 <Zap className="h-4 w-4 text-amber-500" />
                 <span>Pricing</span>
-              </Link>
-              <Link href="/admin" className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-bold text-muted-foreground hover:text-foreground">
-                <LayoutDashboard className="h-4 w-4" />
-                {t.admin}
               </Link>
             </div>
           </div>
@@ -345,6 +348,34 @@ export default function Home() {
                   </div>
                 </div>
               ))}
+            </section>
+
+            {/* Visual Shortcuts Grid */}
+            <section id="shortcuts-grid-section" className="space-y-4">
+              <div className="text-center lg:text-left">
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">Easy Access Tiles</p>
+                <h2 className="text-xl font-black text-foreground">Clickable visual shortcuts for portal uploads</h2>
+              </div>
+              <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
+                {quickActions.map(({ label, icon: Icon, category, action }) => {
+                  const meta = actionColorMeta[action] || { bg: "bg-primary/10", text: "text-primary", border: "border-primary/20", hover: "hover:border-primary hover:bg-primary/5" };
+                  return (
+                    <button
+                      key={label}
+                      onClick={() => openQuickAction(category, action)}
+                      className={`group flex flex-col justify-between items-start rounded-2xl border p-4 text-left transition duration-300 transform hover:-translate-y-1 cursor-pointer bg-card/65 glass shadow-soft hover:shadow-panel ${meta.border} ${meta.hover}`}
+                    >
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${meta.bg} ${meta.text} shadow-inner group-hover:scale-110 transition-transform`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="mt-4">
+                        <h3 className="text-sm font-black text-foreground leading-snug group-hover:text-primary transition-colors">{label}</h3>
+                        <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider mt-1">{category.toUpperCase()} TOOL</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </section>
 
             {/* Row 2: Assistant & Upload dropzone */}
@@ -707,8 +738,63 @@ export default function Home() {
             FileNova — Free online PDF tools, image converters, and document automation for everyone.
             Merge PDF &bull; Compress PDF &bull; Image to PDF &bull; OCR &bull; Document Converter &bull; Government Form Automation
           </p>
+          <div className="mt-6 border-t border-border/40 pt-4 text-center text-xs text-muted-foreground flex flex-col sm:flex-row items-center justify-center gap-4">
+            <span>Testing & feedback: <a href="mailto:pixelsubhajit@gmail.com" className="underline font-bold text-foreground">pixelsubhajit@gmail.com</a></span>
+          </div>
         </div>
       </section>
+
+      {/* Visual Guide Modal */}
+      <VisualGuideModal isOpen={guideOpen} onClose={() => setGuideOpen(false)} />
+
+      {/* Sticky Bottom Navigation Bar */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md rounded-2xl border border-border/80 bg-card/85 backdrop-blur-lg shadow-premium px-4 py-2.5 flex items-center justify-between gap-1">
+        {/* Home / Reset */}
+        <button
+          onClick={startFixMode}
+          className="flex flex-col items-center gap-1 text-[10px] font-black text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+          title="Return to Home / Clear Files"
+        >
+          <LayoutDashboard className="h-4 w-4" />
+          <span>Home</span>
+        </button>
+
+        {/* Quick Shortcuts */}
+        <button
+          onClick={() => {
+            document.getElementById("shortcuts-grid-section")?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }}
+          className="flex flex-col items-center gap-1 text-[10px] font-black text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+          title="Scroll to Quick Actions"
+        >
+          <Zap className="h-4 w-4 text-amber-500" />
+          <span>Shortcuts</span>
+        </button>
+
+        {/* Visual Guide Modal */}
+        <button
+          onClick={() => setGuideOpen(true)}
+          className="flex flex-col items-center gap-1 text-[10px] font-black text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+          title="Open Visual Step-by-Step Guide"
+        >
+          <Bot className="h-4 w-4 text-indigo-400 animate-bounce" />
+          <span>Visual Guide</span>
+        </button>
+
+        {/* Toggle Language shortcut */}
+        <button
+          onClick={() => {
+            const langs: AppLanguage[] = ["en", "bn", "hi"];
+            const nextLang = langs[(langs.indexOf(language) + 1) % langs.length];
+            setLanguage(nextLang);
+          }}
+          className="flex flex-col items-center gap-1 text-[10px] font-black text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+          title="Switch Language"
+        >
+          <Languages className="h-4 w-4 text-emerald-400" />
+          <span>{languageLabels[language]}</span>
+        </button>
+      </div>
     </div>
   );
 }

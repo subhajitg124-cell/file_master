@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   Activity,
   AlertTriangle,
@@ -39,8 +39,15 @@ const logs = [
 
 export default function AdminDashboard() {
   const admin = useAdmin();
-  const [formUser, setFormUser] = useState(admin.creds?.username || "");
-  const [formPass, setFormPass] = useState("");
+  const [, setLocation] = useLocation();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!admin.isAuthenticated) {
+      setLocation("/admin-login");
+    }
+  }, [admin.isAuthenticated, setLocation]);
+
   const [newUser, setNewUser] = useState("");
   const [newPass, setNewPass] = useState("");
   const [activeTab, setActiveTab] = useState<"overview" | "subscriptions">("overview");
@@ -49,6 +56,7 @@ export default function AdminDashboard() {
   const logoUrl = `${import.meta.env.BASE_URL}logo.png`;
 
   useEffect(() => {
+    if (!admin.isAuthenticated) return;
     const headers: Record<string, string> = {};
     if (admin.creds) {
       headers["x-admin-username"] = admin.creds.username;
@@ -60,7 +68,11 @@ export default function AdminDashboard() {
         if (data.success) setSubStats(data.stats);
       })
       .catch(() => {});
-  }, [admin.creds]);
+  }, [admin.creds, admin.isAuthenticated]);
+
+  if (!admin.isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -91,31 +103,10 @@ export default function AdminDashboard() {
         <aside className="space-y-2 rounded-xl border border-border bg-card p-3 lg:sticky lg:top-20 lg:h-fit">
           {/* simple auth area */}
           <div className="rounded-lg border border-border bg-background/50 p-3">
-            {!admin.creds && (
-              <div className="space-y-2">
-                <p className="text-sm font-bold">No admin user set</p>
-                <input value={newUser} onChange={(e) => setNewUser(e.target.value)} placeholder="username" className="w-full rounded-md border p-2 text-sm" />
-                <input value={newPass} onChange={(e) => setNewPass(e.target.value)} placeholder="password" type="password" className="w-full rounded-md border p-2 text-sm" />
-                <button onClick={() => { if (newUser && newPass) { admin.setCredentials(newUser, newPass); setNewUser(""); setNewPass(""); toast.success("Admin user created"); } }} className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-sm font-bold text-primary-foreground">Create admin</button>
-              </div>
-            )}
-
-            {admin.creds && !admin.isAuthenticated && (
-              <div className="space-y-2">
-                <p className="text-sm font-bold">Admin sign in</p>
-                <input value={formUser} onChange={(e) => setFormUser(e.target.value)} placeholder="username" className="w-full rounded-md border p-2 text-sm" />
-                <input value={formPass} onChange={(e) => setFormPass(e.target.value)} placeholder="password" type="password" className="w-full rounded-md border p-2 text-sm" />
-                <button onClick={() => { const ok = admin.login(formUser, formPass); if (ok) toast.success("Signed in successfully!"); else toast.error("Invalid credentials"); }} className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-sm font-bold text-primary-foreground">Sign in</button>
-                <p className="text-xs text-muted-foreground">Default login: <span className="font-semibold">subhajitghosh / Subhajit@56</span></p>
-              </div>
-            )}
-
-            {admin.creds && admin.isAuthenticated && (
-              <div className="space-y-2">
-                <p className="text-sm font-bold">Signed in as {admin.creds.username}</p>
-                <button onClick={() => admin.logout()} className="mt-2 w-full rounded-lg border px-3 py-2 text-sm font-bold">Sign out</button>
-              </div>
-            )}
+            <div className="space-y-2">
+              <p className="text-sm font-bold">Signed in as {admin.creds?.username}</p>
+              <button onClick={() => { admin.logout(); setLocation("/admin-login"); }} className="mt-2 w-full rounded-lg border px-3 py-2 text-sm font-bold cursor-pointer">Sign out</button>
+            </div>
           </div>
 
           <div className="rounded-xl border border-border bg-card p-3">
@@ -142,32 +133,39 @@ export default function AdminDashboard() {
                 <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Offers & Events</p>
                 
                 <div>
-                  <label className="block text-xs font-bold text-foreground">Announced Offer</label>
+                  <label htmlFor="active-offer-input" className="block text-xs font-bold text-foreground">Announced Offer</label>
                   <input 
+                    id="active-offer-input"
                     value={admin.settings.activeOffer || ""} 
                     onChange={(e) => admin.setSettings({ activeOffer: e.target.value })} 
                     placeholder="e.g. Flat 50% Off Launch Deal!" 
+                    aria-label="Announced Offer"
                     className="w-full rounded-md border border-border bg-background p-2 text-xs mt-1" 
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-foreground">Discount Percentage</label>
+                  <label htmlFor="discount-percentage-input" className="block text-xs font-bold text-foreground">Discount Percentage</label>
                   <input 
+                    id="discount-percentage-input"
                     type="number"
                     min="0"
                     max="100"
                     value={admin.settings.discountPercentage || 0} 
                     onChange={(e) => admin.setSettings({ discountPercentage: Number(e.target.value) })} 
+                    placeholder="0"
+                    aria-label="Discount Percentage"
                     className="w-full rounded-md border border-border bg-background p-2 text-xs mt-1" 
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-foreground">Event Theme</label>
+                  <label htmlFor="event-theme-select" className="block text-xs font-bold text-foreground">Event Theme</label>
                   <select 
+                    id="event-theme-select"
                     value={admin.settings.eventTheme || "none"} 
                     onChange={(e) => admin.setSettings({ eventTheme: e.target.value as any })} 
+                    aria-label="Event Theme"
                     className="w-full rounded-md border border-border bg-background p-2 text-xs mt-1"
                   >
                     <option value="none">Standard Theme (Default)</option>
@@ -182,8 +180,8 @@ export default function AdminDashboard() {
             {admin.isAuthenticated && (
               <div className="mt-4 border-t border-border pt-3">
                 <p className="text-xs font-bold">Change credentials</p>
-                <input value={newUser} onChange={(e) => setNewUser(e.target.value)} placeholder="new username" className="w-full rounded-md border p-2 text-sm mt-2" />
-                <input value={newPass} onChange={(e) => setNewPass(e.target.value)} placeholder="new password" type="password" className="w-full rounded-md border p-2 text-sm mt-2" />
+                <input value={newUser} onChange={(e) => setNewUser(e.target.value)} placeholder="new username" aria-label="New username" className="w-full rounded-md border p-2 text-sm mt-2" />
+                <input value={newPass} onChange={(e) => setNewPass(e.target.value)} placeholder="new password" type="password" aria-label="New password" className="w-full rounded-md border p-2 text-sm mt-2" />
                 <button onClick={() => { if (newUser && newPass) { admin.setCredentials(newUser, newPass); toast.success('Credentials updated'); } }} className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-sm font-bold text-primary-foreground">Update creds</button>
               </div>
             )}

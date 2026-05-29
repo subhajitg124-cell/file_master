@@ -6,6 +6,8 @@ import { db, usersTable, subscriptionsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { adminAuth } from "../middlewares/adminAuth";
+import fs from "node:fs";
+import path from "node:path";
 
 const router = Router();
 
@@ -27,6 +29,35 @@ const PLAN_PRICES: Record<string, number> = {
   pro: 3900,  // ₹39.00 in paise
   elite: 5900, // ₹59.00 in paise
 };
+
+const SETTINGS_FILE = path.join(__dirname, "../../../settings.json");
+
+// Helper to read settings
+function getSettings() {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      return JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf-8"));
+    }
+  } catch (e) {
+    logger.error("Failed to read settings file");
+  }
+  return {
+    standaloneMode: false,
+    editingEnabled: true,
+    activeOffer: "",
+    discountPercentage: 0,
+    eventTheme: "none",
+  };
+}
+
+// Helper to write settings
+function saveSettings(settings: any) {
+  try {
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), "utf-8");
+  } catch (e) {
+    logger.error("Failed to write settings file");
+  }
+}
 
 // Helper: Get or create a mock/default user to associate subscription with.
 async function getOrCreateDefaultUser() {
@@ -59,6 +90,21 @@ async function getOrCreateDefaultUser() {
   }
 }
 
+// ── Settings Endpoints ────────────────────────────────────────────────────────
+router.get("/settings", (req: Request, res: Response) => {
+  res.json({ success: true, settings: getSettings() });
+});
+
+router.post("/settings", adminAuth, (req: Request, res: Response) => {
+  try {
+    const settings = req.body;
+    saveSettings(settings);
+    res.json({ success: true, settings });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to save settings" });
+  }
+});
+
 // ── 1. GET /status — Get current subscription status ──────────────────────────
 router.get("/status", async (req: Request, res: Response) => {
   try {
@@ -71,20 +117,55 @@ router.get("/status", async (req: Request, res: Response) => {
         .select()
         .from(subscriptionsTable)
         .where(eq(subscriptionsTable.userId, user.id))
-        .orderBy(desc(subscriptionsTable.createdAt))
-        .limit(1);
-      if (subs.length > 0) {
+        .orderBy(desc(subscriptionsTable.createdAt));
+      
+      const foundActive = subs.find(s => s.status === "active");
+      
+      if (foundActive) {
+        if (foundActive.currentPeriodEnd && new Date(foundActive.currentPeriodEnd) < new Date()) {
+          // Expire subscription in DB
+          try {
+            await db
+              .update(subscriptionsTable)
+              .set({ status: "expired", updatedAt: new Date() })
+              .where(eq(subscriptionsTable.id, foundActive.id));
+            
+            await db
+              .update(usersTable)
+              .set({
+                premiumTier: "free",
+                premiumEnabled: false,
+                updatedAt: new Date(),
+              })
+              .where(eq(usersTable.id, user.id));
+            
+            foundActive.status = "expired";
+            user.premiumTier = "free";
+            user.premiumEnabled = false;
+          } catch (updateErr) {
+            logger.error({ err: updateErr }, "Failed to update expired subscription in DB");
+          }
+        }
+        activeSub = foundActive;
+      } else if (subs.length > 0) {
         activeSub = subs[0];
       }
     } catch (e) {
       logger.error("DB error reading subscription table, falling back to mock");
     }
 
+    const settings = getSettings();
+    const activeOffer = settings.activeOffer && settings.discountPercentage > 0 ? {
+      announcement: settings.activeOffer,
+      discountPercentage: settings.discountPercentage,
+    } : null;
+
     res.json({
       success: true,
       userId: user.id,
       premiumTier: user.premiumTier || "free",
       premiumEnabled: user.premiumEnabled || false,
+      activeOffer,
       subscription: activeSub ? {
         plan: activeSub.plan,
         status: activeSub.status,
@@ -99,13 +180,18 @@ router.get("/status", async (req: Request, res: Response) => {
 // ── 2. POST /order — Create Razorpay Order ────────────────────────────────────
 router.post("/order", async (req: Request, res: Response) => {
   try {
-    const { plan, discountPercentage } = z.object({ 
+    const { plan } = z.object({ 
       plan: z.enum(["basic", "pro", "elite"]),
-      discountPercentage: z.number().optional(),
     }).parse(req.body);
 
+    const settings = getSettings();
+    let discountPercentage = 0;
+    if (settings.activeOffer && settings.discountPercentage > 0) {
+      discountPercentage = settings.discountPercentage;
+    }
+
     let amount = PLAN_PRICES[plan];
-    if (discountPercentage && discountPercentage > 0 && discountPercentage <= 100) {
+    if (discountPercentage > 0 && discountPercentage <= 100) {
       amount = Math.round(amount * (1 - discountPercentage / 100));
     }
     
@@ -190,32 +276,17 @@ router.post("/verify", async (req: Request, res: Response) => {
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 30); // 30 days expiry
 
-        let finalAmount = PLAN_PRICES[body.plan];
-        try {
-          const pendingRows = await db
-            .select()
-            .from(subscriptionsTable)
-            .where(eq(subscriptionsTable.razorpayOrderId, body.razorpay_order_id))
-            .limit(1);
-          if (pendingRows.length > 0) {
-            finalAmount = pendingRows[0].amount;
-          }
-        } catch (_) {}
-
-        // Update subscriptions table
+        // Update subscriptions table instead of inserting duplicate row
         await db
-          .insert(subscriptionsTable)
-          .values({
-            userId: user.id,
-            plan: body.plan,
+          .update(subscriptionsTable)
+          .set({
             status: "active",
-            amount: finalAmount,
-            currency: "INR",
-            razorpayOrderId: body.razorpay_order_id,
             razorpayPaymentId: body.razorpay_payment_id,
             currentPeriodStart: new Date(),
             currentPeriodEnd: expiresAt,
-          });
+            updatedAt: new Date(),
+          })
+          .where(eq(subscriptionsTable.razorpayOrderId, body.razorpay_order_id));
 
         // Update user tier
         await db
@@ -223,6 +294,7 @@ router.post("/verify", async (req: Request, res: Response) => {
           .set({
             premiumTier: body.plan,
             premiumEnabled: true,
+            updatedAt: new Date(),
           })
           .where(eq(usersTable.id, user.id));
 

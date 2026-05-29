@@ -43,26 +43,6 @@ export function useSubscription() {
     setUseCount(uses);
   }, [adsKey, usesKey]);
 
-  // Sync active offer from settings (stored in localStorage under "filenova-settings")
-  const syncActiveOffer = useCallback(() => {
-    try {
-      const raw = localStorage.getItem("filenova-settings");
-      if (raw) {
-        const settings = JSON.parse(raw);
-        if (settings.activeOffer && settings.discountPercentage > 0) {
-          setActiveOffer({
-            announcement: settings.activeOffer,
-            discountPercentage: Number(settings.discountPercentage),
-          });
-          return;
-        }
-      }
-      setActiveOffer(null);
-    } catch (_) {
-      setActiveOffer(null);
-    }
-  }, []);
-
   const fetchStatus = useCallback(async () => {
     try {
       const res = await fetch("/api/v1/premium/subscription/status");
@@ -71,6 +51,11 @@ export function useSubscription() {
         setPremiumTierState(data.premiumTier || "free");
         setPremiumEnabledState(data.premiumEnabled || false);
         setExpiresAt(data.subscription?.expiresAt || null);
+        if (data.activeOffer) {
+          setActiveOffer(data.activeOffer);
+        } else {
+          setActiveOffer(null);
+        }
       }
     } catch (_) {
       // Fallback silently
@@ -80,14 +65,13 @@ export function useSubscription() {
   useEffect(() => {
     fetchStatus();
     syncLocalMetrics();
-    syncActiveOffer();
     // Periodically update to detect changes
     const timer = setInterval(() => {
       syncLocalMetrics();
-      syncActiveOffer();
-    }, 1000);
+      fetchStatus();
+    }, 4000);
     return () => clearInterval(timer);
-  }, [fetchStatus, syncLocalMetrics, syncActiveOffer]);
+  }, [fetchStatus, syncLocalMetrics]);
 
   // Dynamic script loader for Razorpay
   const loadRazorpayScript = (): Promise<boolean> => {
@@ -116,21 +100,10 @@ export function useSubscription() {
         return;
       }
 
-      let discountPercentage = 0;
-      try {
-        const raw = localStorage.getItem("filenova-settings");
-        if (raw) {
-          const settings = JSON.parse(raw);
-          if (settings.activeOffer && settings.discountPercentage > 0) {
-            discountPercentage = Number(settings.discountPercentage);
-          }
-        }
-      } catch (_) {}
-
       const res = await fetch("/api/v1/premium/subscription/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, discountPercentage }),
+        body: JSON.stringify({ plan }),
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();

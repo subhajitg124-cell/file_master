@@ -77,6 +77,20 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
+  // Load settings from the server on mount
+  useEffect(() => {
+    fetch("/api/v1/premium/subscription/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.settings) {
+          setSettingsState(data.settings);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load settings from server", err);
+      });
+  }, []);
+
   useEffect(() => {
     try {
       if (creds) localStorage.setItem(CRED_KEY, JSON.stringify(creds));
@@ -111,8 +125,30 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     setCreds(payload);
   };
 
-  const setSettings = (s: Partial<Settings>) =>
-    setSettingsState((prev) => ({ ...prev, ...s }));
+  const setSettings = async (s: Partial<Settings>) => {
+    const updated = { ...settings, ...s };
+    setSettingsState(updated);
+
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (creds) {
+        headers["x-admin-username"] = creds.username;
+        headers["x-admin-hash"] = creds.passwordHash;
+      }
+      const res = await fetch("/api/v1/premium/subscription/settings", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(updated),
+      });
+      if (!res.ok) {
+        toast.error("Failed to save settings to server");
+      }
+    } catch (e) {
+      toast.error("Network error saving settings");
+    }
+  };
 
   return (
     <AdminContext.Provider
