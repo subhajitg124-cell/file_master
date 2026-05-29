@@ -712,7 +712,7 @@ export default function Home() {
 
       {/* AdSense Unit placement */}
       <div className="mx-auto max-w-7xl px-4 py-4">
-        <AdSenseUnit />
+        <AdSenseUnit type="multiplex" />
       </div>
 
       {/* ✅ SEO: Keyword section — visible to search engines, styled subtly for users */}
