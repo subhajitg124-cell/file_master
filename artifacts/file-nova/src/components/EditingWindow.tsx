@@ -9,7 +9,7 @@ import {
   Download,
   ImageIcon,
   Layers,
-  MagicMouse,
+  MousePointer2,
   Menu,
   Pencil,
   RotateCcw,
