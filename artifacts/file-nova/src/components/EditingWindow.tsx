@@ -607,7 +607,7 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
             ) : null}
           </AnimatePresence>
 
-          {activeHeading("🔍 OCR & Text Extract", <MagicMouse className="h-5 w-5" />, "ocr")}
+          {activeHeading("🔍 OCR & Text Extract", <MousePointer2 className="h-5 w-5" />, "ocr")}
           <AnimatePresence initial={false}>
             {activeSection === "ocr" ? (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">

@@ -35,7 +35,7 @@ const filterMap: Record<ImageFilterPreset, string> = {
   "high-contrast": "contrast(1.6) brightness(1.05)",
 };
 
-export function useImageEditor(canvasRef: React.RefObject<HTMLCanvasElement>): ImageEditorApi {
+export function useImageEditor(canvasRef: React.RefObject<HTMLCanvasElement | null>): ImageEditorApi {
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [ready, setReady] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);

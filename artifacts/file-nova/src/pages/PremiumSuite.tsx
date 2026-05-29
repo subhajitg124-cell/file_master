@@ -27,11 +27,11 @@ import { UserProfileDropdown } from "@/components/UserProfileDropdown";
 import { FeatureKey, isFeatureEnabled, enabledFeatureKeys, isLowBandwidthMode } from "@/features.config";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-const VoiceAssistant = React.lazy(() => import("@/components/VoiceAssistant"));
-const AadhaarMasking = React.lazy(() => import("@/components/AadhaarMasking"));
-const QRVerification = React.lazy(() => import("@/components/QRVerification"));
-const ExamToolkit = React.lazy(() => import("@/components/ExamToolkit"));
-const QuickShareButton = React.lazy(() => import("@/components/WhatsAppShare")).then((mod) => ({ default: mod.QuickShareButton }));
+const VoiceAssistant = React.lazy(() => import("@/components/VoiceAssistant").then((mod) => ({ default: mod.VoiceAssistant })));
+const AadhaarMasking = React.lazy(() => import("@/components/AadhaarMasking").then((mod) => ({ default: mod.AadhaarMasking })));
+const QRVerification = React.lazy(() => import("@/components/QRVerification").then((mod) => ({ default: mod.QRVerification })));
+const ExamToolkit = React.lazy(() => import("@/components/ExamToolkit").then((mod) => ({ default: mod.ExamToolkit })));
+const QuickShareButton = React.lazy(() => import("@/components/WhatsAppShare").then((mod) => ({ default: mod.QuickShareButton })));
 
 const features: Array<{
   key: FeatureKey;

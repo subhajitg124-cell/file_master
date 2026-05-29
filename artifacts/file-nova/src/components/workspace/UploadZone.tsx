@@ -63,7 +63,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ allowedCategory = null }
     }
     setError(null);
     openEditor(file, resolveEditorType(file));
-  }, [addFiles, allowedCategory, isMockMode, jobId, setError, setJobId]);
+  }, [allowedCategory, setError, openEditor]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, maxSize: 100 * 1024 * 1024, disabled: !admin.settings.editingEnabled });
 

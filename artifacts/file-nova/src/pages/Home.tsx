@@ -45,7 +45,7 @@ import { TestingNotice } from "@/components/TestingNotice";
 import { VisualGuideModal } from "@/components/workspace/VisualGuideModal";
 import { AdSenseUnit } from "@/components/AdSenseUnit";
 import { UserProfileDropdown } from "@/components/UserProfileDropdown";
-const VoiceAssistant = React.lazy(() => import("@/components/VoiceAssistant"));
+const VoiceAssistant = React.lazy(() => import("@/components/VoiceAssistant").then((mod) => ({ default: mod.VoiceAssistant })));
 const QuickShareButton = React.lazy(() => import("@/components/WhatsAppShare").then((mod) => ({ default: mod.QuickShareButton })));
 const EditingWindow = React.lazy(() => import("@/components/EditingWindow").then((mod) => ({ default: mod.EditingWindow })));
 const PassportPhotoEditor = React.lazy(() => import("@/components/workspace/PassportPhotoEditor").then((mod) => ({ default: mod.PassportPhotoEditor })));
