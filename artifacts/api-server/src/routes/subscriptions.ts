@@ -6,6 +6,7 @@ import { db, usersTable, subscriptionsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { adminAuth } from "../middlewares/adminAuth";
+import { authMiddleware, requireAuth, type AuthRequest } from "../middlewares/auth";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -106,9 +107,25 @@ router.post("/settings", adminAuth, (req: Request, res: Response) => {
 });
 
 // ── 1. GET /status — Get current subscription status ──────────────────────────
-router.get("/status", async (req: Request, res: Response) => {
+router.get("/status", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getOrCreateDefaultUser();
+    const user = req.user;
+    if (!user) {
+      const settings = getSettings();
+      const activeOffer = settings.activeOffer && settings.discountPercentage > 0 ? {
+        announcement: settings.activeOffer,
+        discountPercentage: settings.discountPercentage,
+      } : null;
+      res.json({
+        success: true,
+        userId: null,
+        premiumTier: "free",
+        premiumEnabled: false,
+        activeOffer,
+        subscription: null,
+      });
+      return;
+    }
     
     // Find active subscription from DB
     let activeSub = null;
@@ -178,7 +195,7 @@ router.get("/status", async (req: Request, res: Response) => {
 });
 
 // ── 2. POST /order — Create Razorpay Order ────────────────────────────────────
-router.post("/order", async (req: Request, res: Response) => {
+router.post("/order", authMiddleware, requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const { plan } = z.object({ 
       plan: z.enum(["basic", "pro", "elite"]),
@@ -195,7 +212,7 @@ router.post("/order", async (req: Request, res: Response) => {
       amount = Math.round(amount * (1 - discountPercentage / 100));
     }
     
-    const user = await getOrCreateDefaultUser();
+    const user = req.user!;
 
     const rp = getRazorpayInstance();
     let orderId = `order_mock_${crypto.randomBytes(8).toString("hex")}`;
@@ -245,7 +262,7 @@ router.post("/order", async (req: Request, res: Response) => {
 });
 
 // ── 3. POST /verify — Verify Razorpay payment signature ─────────────────────────
-router.post("/verify", async (req: Request, res: Response) => {
+router.post("/verify", authMiddleware, requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const body = z.object({
       razorpay_order_id: z.string(),
@@ -254,7 +271,7 @@ router.post("/verify", async (req: Request, res: Response) => {
       plan: z.enum(["basic", "pro", "elite"]),
     }).parse(req.body);
 
-    const user = await getOrCreateDefaultUser();
+    const user = req.user!;
     const rp = getRazorpayInstance();
     let verified = true;
 
@@ -314,9 +331,9 @@ router.post("/verify", async (req: Request, res: Response) => {
 });
 
 // ── 4. POST /cancel — Cancel Active Subscription ──────────────────────────────
-router.post("/cancel", async (req: Request, res: Response) => {
+router.post("/cancel", authMiddleware, requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getOrCreateDefaultUser();
+    const user = req.user!;
 
     try {
       // Update active subscriptions to cancelled

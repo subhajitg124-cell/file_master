@@ -20,6 +20,8 @@ export const eventCategoryEnum = pgEnum("event_category", ["scheme", "student", 
 export const usersTable = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: varchar("email", { length: 320 }).notNull().unique(),
+  phoneNumber: varchar("phone_number", { length: 20 }).unique(),
+  passwordHash: text("password_hash"),
   name: varchar("name", { length: 160 }),
   role: userRoleEnum("role").notNull().default("user"),
   language: varchar("language", { length: 8 }).notNull().default("en"),
@@ -125,6 +127,21 @@ export const processingJobsRelations = relations(processingJobsTable, ({ many, o
   eventRule: one(eventRulesTable, { fields: [processingJobsTable.eventRuleId], references: [eventRulesTable.id] }),
 }));
 
+export const sessionsTable = pgTable("sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const sessionsRelations = relations(sessionsTable, ({ one }) => ({
+  user: one(usersTable, {
+    fields: [sessionsTable.userId],
+    references: [usersTable.id],
+  }),
+}));
+
 export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertEventRuleSchema = createInsertSchema(eventRulesTable).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertDocumentRuleSchema = createInsertSchema(documentRulesTable).omit({ id: true });
@@ -136,6 +153,7 @@ export type EventRule = typeof eventRulesTable.$inferSelect;
 export type InsertEventRule = z.infer<typeof insertEventRuleSchema>;
 export type DocumentRule = typeof documentRulesTable.$inferSelect;
 export type ProcessingJob = typeof processingJobsTable.$inferSelect;
+export type Session = typeof sessionsTable.$inferSelect;
 
 // Premium features exports
 export * from "./premium";

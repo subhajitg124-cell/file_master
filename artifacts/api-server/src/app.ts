@@ -3,11 +3,13 @@ import cors from "cors";
 import helmet from "helmet";
 import path from "node:path";
 import pinoHttp from "pino-http";
+import cookieParser from "cookie-parser";
 import router from "./routes";
 import apiV1Router from "./routes/apiV1";
 import { requestTimeout } from "./middlewares/requestTimeout";
 import { logger } from "./lib/logger";
 import { apiLimiter } from "./middlewares/rateLimit";
+import { authMiddleware } from "./middlewares/auth";
 
 const app: Express = express();
 
@@ -53,6 +55,8 @@ app.use(
 // ── Body parsers (with size limits) ──────────────────────────────────────────
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+app.use(cookieParser());
+app.use(authMiddleware);
 
 // ── Global rate limiting ──────────────────────────────────────────────────────
 app.use(apiLimiter);

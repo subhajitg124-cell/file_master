@@ -42,6 +42,7 @@ import { UploadZone } from "@/components/workspace/UploadZone";
 import { TestingNotice } from "@/components/TestingNotice";
 import { VisualGuideModal } from "@/components/workspace/VisualGuideModal";
 import { AdSenseUnit } from "@/components/AdSenseUnit";
+import { UserProfileDropdown } from "@/components/UserProfileDropdown";
 
 const languageLabels: Record<AppLanguage, string> = {
   en: "English",
@@ -244,11 +245,12 @@ export default function Home() {
               </Link>
               <button
                 onClick={() => setTheme((value) => (value === "dark" ? "light" : "dark"))}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground mr-1"
                 aria-label="Toggle theme"
               >
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
+              <UserProfileDropdown />
             </div>
 
             <button onClick={() => setMobileMenuOpen((v) => !v)} className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-lg border border-border bg-card text-muted-foreground">
@@ -282,6 +284,9 @@ export default function Home() {
                 <Zap className="h-4 w-4 text-amber-500" />
                 <span>Pricing</span>
               </Link>
+              <div className="pt-1.5 border-t border-border mt-1">
+                <UserProfileDropdown />
+              </div>
             </div>
           </div>
         )}

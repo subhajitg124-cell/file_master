@@ -28,6 +28,7 @@ import { ExamToolkit } from "@/components/ExamToolkit";
 import { QuickShareButton } from "@/components/WhatsAppShare";
 import { FeatureGate } from "@/components/FeatureGate";
 import { useFileStore } from "@/store/useFileStore";
+import { UserProfileDropdown } from "@/components/UserProfileDropdown";
 
 type FeatureKey =
   | "whatsapp"
@@ -186,9 +187,12 @@ export default function PremiumSuite() {
             <ChevronLeft className="h-4 w-4" />
             FileNova
           </Link>
-          <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
-            <Lock className="h-4 w-4 text-emerald-500" />
-            Privacy mode on
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-muted-foreground mr-1">
+              <Lock className="h-4 w-4 text-emerald-500" />
+              Privacy mode on
+            </div>
+            <UserProfileDropdown />
           </div>
         </div>
       </header>

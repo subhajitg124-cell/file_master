@@ -9,6 +9,9 @@ import { ChevronLeft, Sparkles, CheckCircle2, ShieldCheck, Zap, Loader } from "l
 import { useSubscription, type PremiumTier, isTestingPeriodActive } from "@/hooks/useSubscription";
 import { TestingNotice } from "@/components/TestingNotice";
 import { useAdmin } from "@/lib/admin";
+import { useAuthStore } from "@/store/useAuthStore";
+import { UserProfileDropdown } from "@/components/UserProfileDropdown";
+import { AuthModal } from "@/components/AuthModal";
 import { toast } from "sonner";
 
 interface PlanCardProps {
@@ -111,6 +114,8 @@ function PlanCard({
 
 export default function PricingPage() {
   const { premiumTier, startCheckout, cancelSubscription, loading, activeOffer } = useSubscription();
+  const { user } = useAuthStore();
+  const [authModalOpen, setAuthModalOpen] = React.useState(false);
   const admin = useAdmin();
   const isTesting = isTestingPeriodActive();
 
@@ -196,6 +201,11 @@ export default function PricingPage() {
       toast.info("All plans are currently free during the testing period! Enjoy all premium benefits.");
       return;
     }
+    if (!user && plan !== "free") {
+      toast.error("Please sign in first to purchase a plan.");
+      setAuthModalOpen(true);
+      return;
+    }
     if (plan === "free") {
       if (premiumTier !== "free") {
         if (confirm("Are you sure you want to cancel your premium plan? This will return you to the ad-supported free tier.")) {
@@ -248,9 +258,12 @@ export default function PricingPage() {
             <ChevronLeft className="h-4 w-4" />
             FileNova Home
           </Link>
-          <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
-            <ShieldCheck className="h-4 w-4 text-emerald-500" />
-            Encrypted Checkout
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-muted-foreground mr-1">
+              <ShieldCheck className="h-4 w-4 text-emerald-500" />
+              Encrypted Checkout
+            </div>
+            <UserProfileDropdown />
           </div>
         </div>
       </header>
@@ -315,6 +328,7 @@ export default function PricingPage() {
           </p>
         </div>
       </main>
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </div>
   );
 }

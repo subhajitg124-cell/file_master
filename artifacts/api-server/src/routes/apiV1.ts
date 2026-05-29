@@ -9,6 +9,7 @@ import { logger } from "../lib/logger";
 import { execSync } from "child_process";
 import premiumRouter from "./premium";
 import subscriptionRouter from "./subscriptions";
+import authRouter from "./auth";
 
 const router = Router();
 
@@ -365,5 +366,6 @@ expiredCleanupTimer.unref();
 // Mount premium features routes
 router.use("/premium", premiumRouter);
 router.use("/premium/subscription", subscriptionRouter);
+router.use("/auth", authRouter);
 
 export default router;
