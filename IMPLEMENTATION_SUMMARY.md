@@ -1,15 +1,15 @@
-# 📊 FileMaster AI - Premium Features Implementation Summary
+# 📊 FileNova AI - Premium Features Implementation Summary
 
-## ✅ Completion Status: 28% Complete (4/14 Features)
+## ✅ Completion Status: 42% Complete (6/14 Features)
 
 ### Progress Overview
 
 ```
-████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 28%
+███████████████░░░░░░░░░░░░░░░░░░░░░░ 42%
 
-Completed:         4 features
+Completed:         6 features
 In Progress:       3 features  
-To Be Done:        7 features
+To Be Done:        5 features
 ```
 
 ---
@@ -46,6 +46,36 @@ To Be Done:        7 features
    - ✅ DEPLOYMENT_GUIDE.md (11KB) - Docker, K8s, monitoring
    - ✅ README_PREMIUM.md (10KB) - Feature overview and usage
 
+### 5. **PWA & Offline Support** (100% Done) ✨ NEW
+   - ✅ `vite-plugin-pwa` installed and configured
+   - ✅ Service worker with Workbox caching strategy
+   - ✅ App manifest (name, icons, theme, standalone mode)
+   - ✅ Static asset caching (JS, CSS, images, fonts)
+   - ✅ API routes excluded from cache (`/api/*`)
+   - ✅ `OfflineBanner.tsx` — shows offline warning bar, back-online toast, update available prompt
+   - ✅ PWA install prompt enabled for Chrome/Android
+   - **Files**: `vite.config.ts`, `artifacts/file-nova/src/components/OfflineBanner.tsx`
+   - **Icons**: `public/icon-192.png`, `public/icon-512.png`
+
+### 6. **File Expiry Countdown Timer** (100% Done) ✨ NEW
+   - ✅ `useFileExpiry.ts` hook — tracks processed files with 1-hour expiry (matches backend cleanup)
+   - ✅ `FileExpiryBar.tsx` — sticky bottom bar showing filename, live countdown, progress bar
+   - ✅ Goes red/urgent in last 5 minutes
+   - ✅ Direct download button per file
+   - ✅ Collapsible, dismiss individual files
+   - ✅ Persists across page navigation via sessionStorage
+   - **Files**: `artifacts/file-nova/src/hooks/useFileExpiry.ts`, `artifacts/file-nova/src/components/FileExpiryBar.tsx`
+
+### 7. **Aadhaar Audit Trail UI** (100% Done) ✨ NEW
+   - ✅ `AadhaarAuditTrail.tsx` — modal showing full masking history
+   - ✅ `saveAuditEntry()` — call after every successful mask operation
+   - ✅ Filter by status (all / success / failed)
+   - ✅ Shows filename, masked format (XXXX-XXXX-LAST4), date, file size
+   - ✅ Clear all history option
+   - ✅ Stored in localStorage only — no raw Aadhaar numbers ever saved
+   - ✅ Privacy notice in footer
+   - **File**: `artifacts/file-nova/src/components/AadhaarAuditTrail.tsx`
+
 ---
 
 ## 🔄 Currently In Progress
@@ -68,11 +98,12 @@ To Be Done:        7 features
    - **Next Step**: Wire up voice commands to actions
 
 ### 3. **Aadhaar Masking** (Feature #7)
-   **Status**: API ready, needs UI
+   **Status**: API + Audit Trail done, masking UI pending
    - ✅ API endpoints implemented
    - ✅ Security logic in place
-   - ⏳ TODO: React component, detection UI
-   - **Next Step**: Create masking preview component
+   - ✅ Audit trail UI complete
+   - ⏳ TODO: React masking preview component, OCR-based detection UI
+   - **Next Step**: Create `AadhaarMaskingTool.tsx` with preview
 
 ---
 
@@ -128,6 +159,7 @@ To Be Done:        7 features
    - Mobile responsiveness pass
    - Accessibility audit (WCAG 2.1 AA)
    - Animation polish
+   - Editing window (cutout.pro-style) for all tools
 
 10. **Deployment & Docs** (#14)
     - Docker compose finalization
@@ -136,13 +168,13 @@ To Be Done:        7 features
 
 ---
 
-## 🏗️ Architecture Created
+## 🏗️ Architecture
 
 ### Database Layer
 - **11 Tables**: premium_documents, share_links, scan_history, form_autofill_cache, bulk_jobs, qr_codes, cafe_customers, voice_commands, activity_logs, digilocker_sessions, exam_templates
 - **Encryption**: AES-256-GCM with per-user key derivation
 - **Audit Trail**: Complete activity logging
-- **Auto-Cleanup**: Scheduled deletion of expired data
+- **Auto-Cleanup**: Scheduled deletion of expired data (1 hour)
 
 ### API Layer
 - **Base URL**: `/api/v1/premium/*`
@@ -156,6 +188,7 @@ To Be Done:        7 features
 - **Components**: Pre-built UI components
 - **Theme**: Light/dark mode ready
 - **Mobile**: Responsive design
+- **PWA**: Offline support, installable, service worker caching
 
 ---
 
@@ -169,9 +202,13 @@ To Be Done:        7 features
 - **React Hooks**: 7,661 bytes (usePremiumFeatures.ts)
 - **WhatsApp Component**: 7,212 bytes (WhatsAppShare.tsx)
 - **Voice Component**: 7,785 bytes (VoiceAssistant.tsx)
+- **File Expiry Hook**: ~2,100 bytes (useFileExpiry.ts) ✨ NEW
+- **File Expiry Bar**: ~3,200 bytes (FileExpiryBar.tsx) ✨ NEW
+- **Aadhaar Audit Trail**: ~4,100 bytes (AadhaarAuditTrail.tsx) ✨ NEW
+- **Offline Banner**: ~3,400 bytes (OfflineBanner.tsx) ✨ NEW
 - **Documentation**: 34KB+ (guides + README)
 
-**Total**: ~102KB of production-ready code
+**Total**: ~110KB of production-ready code
 
 ### Database Tables
 - **New**: 11 tables
@@ -190,21 +227,24 @@ To Be Done:        7 features
 
 ### Immediate Next Steps (Day 1-2)
 
-1. **Connect WhatsApp Share to Database**
+1. **Wire registerFile() after processing**
    ```typescript
-   // In premium.ts route
+   import { useFileExpiry } from "@/hooks/useFileExpiry";
+   const { registerFile } = useFileExpiry();
+   // After API returns processed file:
+   registerFile(result.fileId, result.fileName, result.downloadUrl);
+   ```
+
+2. **Wire saveAuditEntry() after Aadhaar masking**
+   ```typescript
+   import { saveAuditEntry } from "@/components/AadhaarAuditTrail";
+   // After POST /api/v1/premium/aadhaar/mask succeeds:
+   saveAuditEntry({ fileName, lastFourDigits, status: "success", fileSize });
+   ```
+
+3. **Connect WhatsApp Share to Database**
+   ```typescript
    const result = await db.insert(shareLinksTable).values({...})
-   ```
-
-2. **Add Voice Command Routing**
-   ```typescript
-   // In VoiceAssistant.tsx
-   if (command.includes("upload")) triggerUpload();
-   ```
-
-3. **Create Aadhaar Masking UI**
-   ```typescript
-   // New component: AadhaarMaskingTool.tsx
    ```
 
 ### Short Term (Week 1-2)
@@ -213,20 +253,21 @@ To Be Done:        7 features
 5. Implement OCR + Form Autofill flow
 6. Create QR scanning component
 7. Add Exam template selector UI
+8. Build EditingWindow component (cutout.pro-style)
 
 ### Medium Term (Week 3-4)
 
-8. Implement Cyber Cafe Mode dashboard
-9. Build Bulk Student Processing UI
-10. Create AI Smart Assistant chatbot
-11. Polish UI/UX for mobile
+9. Implement Cyber Cafe Mode dashboard
+10. Build Bulk Student Processing UI
+11. Create AI Smart Assistant chatbot
+12. Polish UI/UX for mobile
 
 ### Long Term (Week 5-6)
 
-12. Complete deployment setup
-13. Write comprehensive API docs
-14. Set up CI/CD pipeline
-15. Performance optimization
+13. Complete deployment setup
+14. Write comprehensive API docs
+15. Set up CI/CD pipeline
+16. Performance optimization
 
 ---
 
@@ -238,6 +279,7 @@ To Be Done:        7 features
 - ✅ Error handling in place
 - ✅ Logging integrated
 - ✅ Security best practices
+- ✅ Error boundary in App.tsx
 
 ### Performance
 - ⏳ API response <100ms (pending DB integration)
@@ -249,55 +291,41 @@ To Be Done:        7 features
 - ✅ Timing-safe comparisons
 - ✅ PBKDF2 password hashing
 - ✅ Secure token generation
-- ⏳ Audit logging UI
+- ✅ Aadhaar audit trail UI (local only)
+- ⏳ Admin activity dashboard
 
 ### User Experience
 - ✅ Mobile responsive
 - ✅ Multi-language support
 - ✅ Voice interaction
-- ⏳ Animations & transitions
+- ✅ Offline support (PWA)
+- ✅ File expiry countdown
+- ✅ Back-online notification
+- ✅ PWA installable (Android/Chrome)
+- ⏳ Editing window UI
 - ⏳ Dark mode polish
 
 ---
 
 ## 📦 Deliverables
 
-### Provided Documents
+### Documents
 1. **PREMIUM_FEATURES_GUIDE.md** - Developer reference
 2. **DEPLOYMENT_GUIDE.md** - DevOps setup guide
 3. **README_PREMIUM.md** - Feature overview
-4. **plan.md** - Session planning document
+4. **NAVIGATION.md** - Project index
 
 ### Code Modules
 1. **Database Layer** - Complete schema + encryption
 2. **API Routes** - 25+ endpoints ready
-3. **Frontend Hooks** - Reusable state management
-4. **Components** - WhatsApp, Voice, etc.
+3. **Frontend Hooks** - `usePremiumFeatures`, `useFileExpiry`
+4. **Components** - WhatsApp, Voice, FileExpiryBar, OfflineBanner, AadhaarAuditTrail
 
 ### Configuration
 1. **Docker setup** - Containerization ready
-2. **Environment variables** - Security configured
+2. **PWA config** - vite-plugin-pwa with Workbox
 3. **Database migrations** - Schema versioned
-4. **CI/CD pipeline** - GitHub Actions template
-
----
-
-## 🎓 Learning Resources
-
-### For Backend Development
-- See `PREMIUM_FEATURES_GUIDE.md` - Architecture section
-- Check `lib/db/src/encryption.ts` - Crypto patterns
-- Review `artifacts/api-server/src/routes/premium.ts` - API design
-
-### For Frontend Development
-- Check `artifacts/file-nova/src/hooks/usePremiumFeatures.ts` - Hook patterns
-- Review `artifacts/file-nova/src/components/WhatsAppShare.tsx` - Component design
-- See `artifacts/file-nova/src/components/VoiceAssistant.tsx` - Multi-language support
-
-### For DevOps
-- See `DEPLOYMENT_GUIDE.md` - Docker/K8s setup
-- Check environment variables in same guide
-- Review monitoring setup (Prometheus, ELK stack)
+4. **Root package.json** - Fixed Windows-incompatible preinstall script
 
 ---
 
@@ -309,61 +337,33 @@ To Be Done:        7 features
 - Use HTTPS in production
 - Enable CORS for trusted domains only
 - Rate limit API endpoints
+- Aadhaar audit data stored locally only — never on server
 
 ### Performance
 - Database needs indexing on frequently searched columns
 - Implement caching for templates & configs
 - Use CDN for static assets
-- Monitor query performance
+- Heavy libs (OpenCV.js, Tesseract.js) must be lazy-loaded
 
-### Testing
-- Write unit tests for encryption functions
-- Integration tests for share link flow
-- E2E tests for user workflows
-- Load testing before production
-
----
-
-## 📞 Support Resources
-
-### Documentation
-- [PREMIUM_FEATURES_GUIDE.md](./PREMIUM_FEATURES_GUIDE.md) - Complete reference
-- [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) - Deployment instructions
-- [README_PREMIUM.md](./README_PREMIUM.md) - Feature overview
-
-### Code Examples
-- WhatsApp sharing: See `WhatsAppShare.tsx`
-- Voice input: See `VoiceAssistant.tsx`
-- Encryption: See `lib/db/src/encryption.ts`
-- API design: See `artifacts/api-server/src/routes/premium.ts`
-
-### Getting Help
-- Check existing code for patterns
-- Review database schema in `lib/db/src/schema/premium.ts`
-- See API examples in `PREMIUM_FEATURES_GUIDE.md`
-- Review React hooks in `usePremiumFeatures.ts`
+### Windows Development
+- Root `package.json` preinstall script removed (was Unix-only)
+- Always use `pnpm` not `npm` or `yarn`
+- Run installs from correct subdirectory
 
 ---
 
 ## 🎉 Summary
 
-FileMaster AI has been successfully enhanced with **premium feature infrastructure**:
+FileNova AI now has a solid foundation with **PWA offline support**, **file expiry tracking**, and **Aadhaar privacy audit trail** added on top of the existing premium infrastructure.
 
-- ✅ **Secure Database** with encryption and audit logging
-- ✅ **Complete Backend APIs** ready for integration
-- ✅ **React Components** for immediate use
-- ✅ **Comprehensive Documentation** for development
-- ✅ **Production-Ready Code** following best practices
+**Next Developer**: Wire `registerFile()` and `saveAuditEntry()` into existing tool flows, then build the EditingWindow component and OCR features.
 
-**Next Developer**: Start with WhatsApp share → OCR → Scanner, then tackle extended features.
-
-**Estimated Time to Full Implementation**: 4-6 weeks with focused effort
+**Estimated Time to Full Implementation**: 3-4 weeks remaining
 
 ---
 
-**Session Date**: 2026-05-27  
-**Status**: ✅ MVP Foundation Complete | 🚀 Ready for Phase 2  
-**Next Phase**: Database Integration + Feature Completion
+**Last Updated**: 2026-05-29
+**Status**: ✅ Phase 2 In Progress | 🚀 PWA Live
+**Progress**: 42% (6/14 features complete)
 
-Made with ❤️ for FileMaster AI
-
+Made with ❤️ for FileNova AI
