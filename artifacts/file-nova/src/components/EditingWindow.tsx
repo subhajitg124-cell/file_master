@@ -443,6 +443,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                         type="number"
                         value={width}
                         onChange={(e) => setWidth(Number(e.target.value))}
+                        title="Width"
+                        aria-label="Width"
                         className="rounded-2xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white"
                         placeholder="Width"
                       />
@@ -450,6 +452,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                         type="number"
                         value={height}
                         onChange={(e) => setHeight(Number(e.target.value))}
+                        title="Height"
+                        aria-label="Height"
                         className="rounded-2xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white"
                         placeholder="Height"
                       />
@@ -475,6 +479,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                         type="search"
                         value={sizeSearch}
                         onChange={(e) => setSizeSearch(e.target.value)}
+                        title="Search sizes"
+                        aria-label="Search sizes"
                         placeholder="Search sizes"
                         className="w-full rounded-2xl border border-slate-800 bg-slate-950 pl-10 pr-3 py-2 text-sm text-white"
                       />
@@ -525,6 +531,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                       type="checkbox"
                       checked={removeBackground}
                       onChange={(e) => setRemoveBackground(e.target.checked)}
+                      title="Remove Background"
+                      aria-label="Remove Background"
                       className="h-4 w-4 rounded border-slate-700 bg-slate-800 text-emerald-500"
                     />
                     <span className="text-sm text-slate-200">Remove Background</span>
@@ -566,6 +574,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                       type="file"
                       accept="image/*"
                       onChange={(event) => handleBackgroundUpload(event.target.files?.[0] ?? null)}
+                      title="Upload background image"
+                      aria-label="Upload background image"
                       className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-slate-200"
                     />
                   </div>
@@ -593,6 +603,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                     type="text"
                     value={aadhaarMaskFormat}
                     onChange={(e) => setAadhaarMaskFormat(e.target.value)}
+                    title="Aadhaar mask format"
+                    aria-label="Aadhaar mask format"
                     className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white"
                   />
                   <div className="rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-200">
@@ -629,6 +641,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                     <select
                       value={ocrLanguage}
                       onChange={(e) => setOcrLanguage(e.target.value)}
+                      title="Select OCR language"
+                      aria-label="Select OCR language"
                       className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white"
                     >
                       <option>English</option>
@@ -640,6 +654,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                     value={ocrText}
                     onChange={(e) => setOcrText(e.target.value)}
                     rows={6}
+                    title="Extracted text"
+                    aria-label="Extracted text"
                     className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-3 py-3 text-sm text-white outline-none focus:border-emerald-400"
                     placeholder="Extracted text appears here..."
                   />
@@ -686,6 +702,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                         <input
                           value={value}
                           onChange={(e) => setAutofillFields((prev) => ({ ...prev, [label]: e.target.value }))}
+                          title={label}
+                          aria-label={label}
                           className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white"
                         />
                       </div>
@@ -728,6 +746,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                     <select
                       value={pdfConvertType}
                       onChange={(e) => setPdfConvertType(e.target.value)}
+                      title="Select PDF conversion format"
+                      aria-label="Select PDF conversion format"
                       className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white"
                     >
                       {pdfConvertOptions.map((option) => (
@@ -746,6 +766,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                       accept="application/pdf"
                       multiple
                       onChange={(event) => setPdfMergeFiles(Array.from(event.target.files || []))}
+                      title="Select PDFs to merge"
+                      aria-label="Select PDFs to merge"
                       className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white"
                     />
                     <div className="space-y-2">
@@ -771,6 +793,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                       value={pdfSplitRange}
                       onChange={(e) => setPdfSplitRange(e.target.value)}
                       placeholder="1-3,5"
+                      title="Split range"
+                      aria-label="Split range"
                       className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white"
                     />
                   </div>
@@ -782,6 +806,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                       value={watermarkText}
                       onChange={(e) => setWatermarkText(e.target.value)}
                       placeholder="Watermark text"
+                      title="Watermark text"
+                      aria-label="Watermark text"
                       className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white"
                     />
                     <div className="grid grid-cols-2 gap-2">
@@ -791,6 +817,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                         max={100}
                         value={watermarkOpacity}
                         onChange={(e) => setWatermarkOpacity(Number(e.target.value))}
+                        title="Watermark opacity"
+                        aria-label="Watermark opacity"
                         className="h-2 w-full accent-emerald-400"
                       />
                       <span className="text-right text-xs text-slate-400">{watermarkOpacity}%</span>
@@ -798,6 +826,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                     <select
                       value={watermarkPosition}
                       onChange={(e) => setWatermarkPosition(e.target.value)}
+                      title="Watermark position"
+                      aria-label="Watermark position"
                       className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white"
                     >
                       <option value="center">Center</option>
@@ -825,6 +855,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                       max={100}
                       value={brightness}
                       onChange={(e) => setBrightness(Number(e.target.value))}
+                      title="Brightness"
+                      aria-label="Brightness"
                       className="h-2 w-full accent-emerald-400"
                     />
                   </div>
@@ -836,6 +868,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                       max={100}
                       value={contrast}
                       onChange={(e) => setContrast(Number(e.target.value))}
+                      title="Contrast"
+                      aria-label="Contrast"
                       className="h-2 w-full accent-emerald-400"
                     />
                   </div>
@@ -847,6 +881,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                       max={100}
                       value={saturation}
                       onChange={(e) => setSaturation(Number(e.target.value))}
+                      title="Saturation"
+                      aria-label="Saturation"
                       className="h-2 w-full accent-emerald-400"
                     />
                   </div>
@@ -916,6 +952,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                     <select
                       value={filterPreset}
                       onChange={(e) => setFilterPreset(e.target.value)}
+                      title="Filter preset"
+                      aria-label="Filter preset"
                       className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white"
                     >
                       {filterOptions.map((option) => (
@@ -939,6 +977,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                       type="text"
                       value={qrPayload}
                       onChange={(e) => setQrPayload(e.target.value)}
+                      title="QR code text or URL"
+                      aria-label="QR code text or URL"
                       className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white"
                       placeholder="Enter text, link or share URL"
                     />
@@ -969,6 +1009,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                         type="file"
                         accept="image/*"
                         onChange={(event) => handleScanQr(event.target.files?.[0] ?? null)}
+                        title="Upload QR code image to scan"
+                        aria-label="Upload QR code image to scan"
                         className="mt-2 block w-full text-xs text-slate-200"
                       />
                     </label>
@@ -999,6 +1041,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                       <select
                         value={exportFormat}
                         onChange={(e) => setExportFormat(e.target.value as "jpg" | "png" | "pdf" | "webp")}
+                        title="Export format"
+                        aria-label="Export format"
                         className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white"
                       >
                         <option value="jpg">JPG</option>
@@ -1015,6 +1059,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
                         max={100}
                         value={exportQuality}
                         onChange={(e) => setExportQuality(Number(e.target.value))}
+                        title="Export quality"
+                        aria-label="Export quality"
                         className="h-2 w-full accent-emerald-400"
                       />
                       <div className="text-right text-xs text-slate-400">{exportQuality}%</div>
@@ -1071,6 +1117,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
             <button
               type="button"
               onClick={() => setZoomLevel((level) => Math.max(0.5, level - 0.1))}
+              title="Zoom out"
+              aria-label="Zoom out"
               className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               -
@@ -1079,6 +1127,8 @@ export const EditingWindow: React.FC<EditingWindowProps> = ({ file, fileType, on
             <button
               type="button"
               onClick={() => setZoomLevel((level) => Math.min(2, level + 0.1))}
+              title="Zoom in"
+              aria-label="Zoom in"
               className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               +
