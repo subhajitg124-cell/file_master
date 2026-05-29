@@ -18,7 +18,10 @@ export default defineConfig({
     react(),
     tailwindcss(),
     ...(process.env.NODE_ENV !== "production"
-      ? await import("@replit/vite-plugin-runtime-error-modal")
+      ? await import(
+          // @ts-expect-error - No type declarations available for this Replit plugin
+          "@replit/vite-plugin-runtime-error-modal"
+        )
           .then((m) => [m.default()])
           .catch(() => [])
       : []),
@@ -79,12 +82,18 @@ export default defineConfig({
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
-          await import("@replit/vite-plugin-cartographer").then((m) =>
+          await import(
+            // @ts-expect-error - No type declarations available for this Replit plugin
+            "@replit/vite-plugin-cartographer"
+          ).then((m) =>
             m.cartographer({
               root: path.resolve(import.meta.dirname, ".."),
             }),
           ),
-          await import("@replit/vite-plugin-dev-banner").then((m) =>
+          await import(
+            // @ts-expect-error - No type declarations available for this Replit plugin
+            "@replit/vite-plugin-dev-banner"
+          ).then((m) =>
             m.devBanner(),
           ),
         ]
