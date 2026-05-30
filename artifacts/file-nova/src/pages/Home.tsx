@@ -186,7 +186,7 @@ export default function Home() {
 
   const [guideOpen, setGuideOpen] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
-  const logoUrl = `${import.meta.env.BASE_URL}logo.png`;
+  const logoUrl = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/logo.png`;
   const [, setLocation] = useLocation();
 
   // ── Search state ─────────────────────────────────────────────────────────
@@ -965,7 +965,7 @@ export default function Home() {
                           }`}
                         >
                           <img 
-                            src={`${import.meta.env.BASE_URL}${slide.image}`} 
+                            src={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/${slide.image}`} 
                             alt={slide.alt} 
                             className="rounded-lg shadow-inner w-full h-full object-cover border border-border/40 group-hover:brightness-105 transition duration-500"
                           />

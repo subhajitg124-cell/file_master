@@ -118,7 +118,7 @@ export default function AdminDashboard() {
     toast.info("Custom scheme deleted successfully");
   };
 
-  const logoUrl = `${import.meta.env.BASE_URL}logo.png`;
+  const logoUrl = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/logo.png`;
 
   const fetchStats = async () => {
     if (!admin.isAuthenticated || !admin.creds) return;
