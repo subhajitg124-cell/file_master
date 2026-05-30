@@ -1,6 +1,6 @@
 {
   "buildCommand": "pnpm --filter @workspace/file-nova build",
-  "outputDirectory": "artifacts/file-nova/dist/public",
+  "outputDirectory": "artifacts/file-nova/dist",
   "framework": "vite",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
