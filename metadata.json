@@ -1,0 +1,6 @@
+{
+  "name": "FileNova",
+  "description": "An all-in-one secure document automation and file manipulation platform for processing PDFs, images, office documents, and video workflows.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
